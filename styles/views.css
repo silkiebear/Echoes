@@ -1,0 +1,79 @@
+/* Chart and gallery styles. Colours come from variables only (dark default in :root, light by data-theme only). */
+:root {
+  --div-1: #2c6fb8;
+  --div-2: #5c96d3;
+  --div-3: #a7c9ec;
+  --div-4: #3b4150;
+  --div-5: #f5c08c;
+  --div-6: #e8862e;
+  --div-7: #b65f1c;
+}
+
+:root[data-theme="light"] {
+  --div-1: #1f5fa0;
+  --div-2: #4f8fd0;
+  --div-3: #a9cdee;
+  --div-4: #e3e6ee;
+  --div-5: #f7c79b;
+  --div-6: #e8862e;
+  --div-7: #a9520f;
+}
+
+.bin-1 { fill: var(--div-1); }
+.bin-2 { fill: var(--div-2); }
+.bin-3 { fill: var(--div-3); }
+.bin-4 { fill: var(--div-4); }
+.bin-5 { fill: var(--div-5); }
+.bin-6 { fill: var(--div-6); }
+.bin-7 { fill: var(--div-7); }
+.na { fill: var(--surface-2); }
+
+.t { fill: var(--text); stroke: var(--surface); stroke-width: 3px; paint-order: stroke; }
+.t-muted { fill: var(--text-muted); stroke: var(--surface); stroke-width: 3px; paint-order: stroke; }
+.dot { fill: var(--text); }
+.band { fill: var(--accent); }
+.line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.baseline { stroke: var(--text-muted); stroke-dasharray: 4 4; }
+.axis { stroke: var(--border); }
+.row-bg { fill: var(--surface-2); }
+.flag-outline { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 4 3; }
+.pill { fill: var(--surface); stroke: var(--text-muted); stroke-width: 1; }
+
+.chart-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart svg {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
+.card-sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0 0 var(--space-1);
+}
+
+.banner {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: var(--space-1);
+  margin: 0 0 var(--space-2);
+}
+
+.pill-html {
+  display: inline-block;
+  border: 1px solid var(--text-muted);
+  border-radius: 999px;
+  padding: 2px var(--space-1);
+  font-size: 13px;
+}
+
+button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--bg);
+}

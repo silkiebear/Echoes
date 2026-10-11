@@ -5,4 +5,9 @@ export const tests = [
   './selftest/registry.test.js',
   './selftest/csp.test.js',
   './selftest/network.test.js',
+  './selftest/svg.test.js',
+  './selftest/synth.test.js',
+  './selftest/echo-demo.test.js',
+  './selftest/views.test.js',
+  './selftest/theme.test.js',
 ];

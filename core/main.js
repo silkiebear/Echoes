@@ -6,12 +6,11 @@ import { modules as manifest } from '../modules/manifest.js';
 
 const THEME_KEY = 'echoes.theme';
 
-function systemTheme() {
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
+// Dark unless the user chose light. The OS light preference is ignored on purpose.
+const DEFAULT_THEME = 'dark';
 
 function currentTheme() {
-  return document.documentElement.dataset.theme || systemTheme();
+  return document.documentElement.dataset.theme || DEFAULT_THEME;
 }
 
 function labelFor(theme) {

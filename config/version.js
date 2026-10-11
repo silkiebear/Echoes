@@ -1,1 +1,1 @@
-export const version = { phase: 0, build: '0.0.1' };
+export const version = { phase: '1a', build: '0.1.0' };

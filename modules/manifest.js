@@ -4,4 +4,5 @@ export const modules = [
   './selftest-panel.js',
   './diag-panel.js',
   './privacy-probe.js',
+  './gallery.js',
 ];
