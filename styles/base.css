@@ -1,0 +1,142 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: calc(var(--space-2) + env(safe-area-inset-top)) calc(var(--space-2) + env(safe-area-inset-right)) var(--space-2) calc(var(--space-2) + env(safe-area-inset-left));
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+#app {
+  max-width: 720px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 calc(var(--space-2) + env(safe-area-inset-right)) calc(var(--space-3) + env(safe-area-inset-bottom)) calc(var(--space-2) + env(safe-area-inset-left));
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  min-width: 0;
+}
+
+.card h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 18px;
+}
+
+button {
+  min-height: var(--touch);
+  min-width: var(--touch);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch);
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+input[type="file"] {
+  min-height: var(--touch);
+  max-width: 100%;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  margin: var(--space-1) 0;
+}
+
+.scroll {
+  overflow: auto;
+  max-height: 50vh;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-1);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: pre;
+}
+
+.status-line {
+  color: var(--text-muted);
+  margin: var(--space-1) 0;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 2px var(--space-1);
+  font-size: 13px;
+}
+
+ul.plain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+img, svg {
+  max-width: 100%;
+}
+
+@media (min-width: 600px) {
+  .card {
+    padding: var(--space-3);
+  }
+}

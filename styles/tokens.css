@@ -1,0 +1,67 @@
+/* Dark is the default. Light applies when the OS prefers light (and no data-theme is set) or when data-theme="light". */
+:root {
+  --bg: #15171c;
+  --surface: #1e2129;
+  --surface-2: #262a34;
+  --text: #e7e9ee;
+  --text-muted: #9aa1b0;
+  --border: #323746;
+  --focus: #7fb2e5;
+  --accent: #5b9bd5;
+  --diverge-neg: #3a7bd5;
+  --diverge-pos: #e8862e;
+  color-scheme: dark;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --touch: 44px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #eceef3;
+    --text: #1c1f26;
+    --text-muted: #5b6270;
+    --border: #d5d9e2;
+    --focus: #1f5fa0;
+    --accent: #2b6cb0;
+    --diverge-neg: #2b6cb0;
+    --diverge-pos: #d9731f;
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface-2: #eceef3;
+  --text: #1c1f26;
+  --text-muted: #5b6270;
+  --border: #d5d9e2;
+  --focus: #1f5fa0;
+  --accent: #2b6cb0;
+  --diverge-neg: #2b6cb0;
+  --diverge-pos: #d9731f;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #15171c;
+  --surface: #1e2129;
+  --surface-2: #262a34;
+  --text: #e7e9ee;
+  --text-muted: #9aa1b0;
+  --border: #323746;
+  --focus: #7fb2e5;
+  --accent: #5b9bd5;
+  --diverge-neg: #3a7bd5;
+  --diverge-pos: #e8862e;
+  color-scheme: dark;
+}
