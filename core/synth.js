@@ -1,5 +1,6 @@
 // Synthetic tracker-like data with planted effects. Output is deterministic for a given config.
-// Config shape: see app/config/synth.js. Output: { labels: [{id, text, code}], days: [{day, date, weekday, labels}] }.
+// Config shape: see app/config/synth.js. Output: { labels: [{id, text, code}], days: [{day, date, weekday, labels, mood}] }
+// where mood is an integer 1 (bad) to 5 (great).
 
 const DAY_MS = 86400000;
 const SATURDAY = 6;
@@ -15,6 +16,16 @@ export function mulberry32(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// Maps a uniform draw to a mood score 1..n using cumulative weights (last score takes any rounding left over).
+function pickScore(u, weights) {
+  let acc = 0;
+  for (let i = 0; i < weights.length; i++) {
+    acc += weights[i];
+    if (u < acc) return i + 1;
+  }
+  return weights.length;
 }
 
 // True when the exposure happened on any day in the effect's lag range before day t.
@@ -37,6 +48,11 @@ export function generate(cfg) {
   const has = labels.map(() => new Uint8Array(cfg.days));
   const start = Date.parse(`${cfg.startDate}T00:00:00Z`);
   const days = [];
+  // Separate PRNG for mood, so adding mood leaves the label stream unchanged.
+  const moodRnd = mulberry32(cfg.seed + cfg.mood.seedOffset);
+  const [sizeLo, sizeHi] = cfg.mood.sizeRange;
+  const dropChance = sizeLo + (sizeHi - sizeLo) * moodRnd();
+  const sleepId = idOf.get(cfg.mood.poorSleep);
 
   for (let t = 0; t < cfg.days; t++) {
     const date = new Date(start + t * DAY_MS);
@@ -57,7 +73,10 @@ export function generate(cfg) {
         ids.push(label.id);
       }
     }
-    days.push({ day: t, date: date.toISOString().slice(0, 10), weekday, labels: ids });
+    const afterSleep = t > 0 && has[sleepId][t - 1] === 1;
+    let mood = pickScore(moodRnd(), cfg.mood.weights);
+    if (afterSleep && moodRnd() < dropChance) mood = Math.max(1, mood - 1); // planted: one step lower
+    days.push({ day: t, date: date.toISOString().slice(0, 10), weekday, labels: ids, mood });
   }
   return { labels, days };
 }

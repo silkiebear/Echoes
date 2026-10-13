@@ -1,5 +1,7 @@
 // SVG strings for views. No xmlns attribute: mountSvg parses the markup through a template,
 // so the HTML parser assigns the SVG namespace. Text from data must go through esc().
+import { viewSettings } from '../config/views.js';
+
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
 export function esc(str) {
@@ -11,9 +13,10 @@ export function svgDoc({ width, height, title, desc, body }) {
     + `<title>${esc(title)}</title><desc>${esc(desc)}</desc>${body}</svg>`;
 }
 
-// Text element; the value is escaped here, so callers cannot forget it.
-export function svgText(x, y, value, cls, anchor = 'start') {
-  return `<text x="${x}" y="${y}" dy="0.35em" class="${cls}" text-anchor="${anchor}">${esc(value)}</text>`;
+// Text element; the value is escaped here, so callers cannot forget it. The font size is written as an
+// attribute so the layout test can read it from the markup (see core/textfit.js).
+export function svgText(x, y, value, cls, anchor = 'start', fontPx = viewSettings.text.fontPx) {
+  return `<text x="${x}" y="${y}" dy="0.35em" class="${cls}" text-anchor="${anchor}" font-size="${fontPx}">${esc(value)}</text>`;
 }
 
 export function mountSvg(container, svgString) {

@@ -5,6 +5,7 @@ import { windows } from '../config/windows.js';
 import { viewSettings } from '../config/views.js';
 import { generate } from '../core/synth.js';
 import { computeEchoes, buildE1Data, buildE2Data, buildE3Data } from '../core/echo-demo.js';
+import { buildTimeData } from '../core/time-demo.js';
 
 const data = generate(cfg);
 const echoes = computeEchoes(data, windows, viewSettings.echo);
@@ -13,6 +14,7 @@ const demoData = {
   E1: buildE1Data(data, echoes, idOf('Late coffee F-'), [idOf('Poor sleep S-'), idOf('Alcohol H-'), idOf('Headache B-')], windows),
   E2: buildE2Data(data, idOf('Deadline W-'), idOf('Anxious M-'), viewSettings.curve),
   E3: buildE3Data(data, echoes, windows, viewSettings.ranking.maxRows),
+  ...buildTimeData(data),
 };
 const HOSTILE = '<b>&"\'';
 const hostileRows = {

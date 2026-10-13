@@ -13,11 +13,16 @@ const REDACTED = '[REDACTED]';
 const UTF8_MAX_BYTES = 4; // reserved so a cut multi-byte character cannot overflow the cap
 const DEFAULT_SECTION = 'SAFE';
 
+// Built from parts so no external-URL literal appears in app files (lint L2). Matches an optional scheme,
+// then "//", then host and port, up to the next slash, space or closing parenthesis. Path parts are kept.
+const ORIGIN = new RegExp(`(?:[a-z][a-z0-9+.-]*:)?\\/\\/[^/\\s)]*`, 'gi');
+
 const entries = new Map();  // lowercase text -> { text, token }
 const counters = new Map(); // prefix -> last number issued
 let pattern = null;         // compiled alternation, rebuilt after register()
 let logEntries = [];
 let errorEntries = [];
+let errorTotal = 0;         // every error captured this session, not capped like errorEntries
 let selftestSummary = null;
 let capturedTarget = null;
 
@@ -39,9 +44,10 @@ function trimTo(list, max) {
   if (list.length > max) list.splice(0, list.length - max);
 }
 
+// NFC first, so a composed and a decomposed spelling of the same label match each other.
 export function register(str, kind) {
   if (typeof str !== 'string') return null;
-  const text = str.trim();
+  const text = str.normalize('NFC').trim();
   if (text.length < MIN_LENGTH) return null;
   const key = text.toLowerCase();
   const existing = entries.get(key);
@@ -56,7 +62,7 @@ export function register(str, kind) {
 }
 
 export function safe(value) {
-  const text = String(value);
+  const text = String(value).normalize('NFC');
   if (entries.size === 0) return text;
   pattern = pattern || compile();
   return text.replace(pattern, (match) => {
@@ -83,15 +89,25 @@ function describeValue(value) {
   return { message: String(value), stack: '' };
 }
 
+// Keeps the path of each URL-like token and drops scheme, host and port.
+export function stripOrigins(text) {
+  return String(text).replace(ORIGIN, '');
+}
+
 function recordError(kind, value, fallback) {
   const info = describeValue(value);
+  errorTotal += 1;
   errorEntries.push({
     time: new Date().toISOString(),
     kind,
-    message: safe(info.message || fallback),
-    stack: safe(info.stack),
+    message: safe(stripOrigins(info.message || fallback)),
+    stack: safe(stripOrigins(info.stack)),
   });
   trimTo(errorEntries, app.diag.maxErrors);
+}
+
+export function totalErrors() {
+  return errorTotal;
 }
 
 export function captureErrors(target = typeof window !== 'undefined' ? window : null) {
@@ -115,6 +131,7 @@ export function reset() {
   pattern = null;
   logEntries = [];
   errorEntries = [];
+  errorTotal = 0;
   selftestSummary = null;
 }
 

@@ -1,15 +1,23 @@
 // E2 Echo curve. Data (echo-demo.js buildE2Data): { eventLabel, outcomeLabel, baseline,
 // points: [{ day, rate, lo, hi, n }] } with rate null when n is 0 (gap in the line).
-// The band is a DEMO band (baseline +- bandFraction), not a placebo band; the subtitle says so.
+// opts.width (CSS px, optional): the plot fills it down to minPlotWidth. The band is a DEMO band
+// (baseline +- bandFraction), not a placebo band; the caption says so.
 import { svgDoc, svgText } from '../core/svg.js';
 import { formatPercent } from '../core/format.js';
 import { viewSettings } from '../config/views.js';
+import { wrapText } from '../core/textfit.js';
 
 const c = viewSettings.curve;
+const { fontPx, smallFontPx } = viewSettings.text;
 
-function render(data) {
-  const plotW = c.width - c.marginLeft - c.marginRight;
-  const plotH = c.height - c.marginTop - c.marginBottom;
+function tickLabel(day) {
+  return day === 1 ? '1 day' : `${day} days`;
+}
+
+function render(data, opts = {}) {
+  const width = Math.max(opts.width || c.width, c.minPlotWidth + c.marginLeft + c.marginRight);
+  const plotW = width - c.marginLeft - c.marginRight;
+  const plotH = c.plotHeight;
   const pts = data.points;
   const last = pts.length;
   const drawn = pts.filter((p) => p.rate !== null);
@@ -28,17 +36,34 @@ function render(data) {
   for (const p of drawn) {
     body += `<circle class="dot" cx="${xOf(p.day)}" cy="${yOf(p.rate)}" r="${c.pointRadius}"/>`;
   }
-  body += svgText(c.marginLeft - c.fontSize / 3, yOf(0), formatPercent(0), 't-muted', 'end');
-  body += svgText(c.marginLeft - c.fontSize / 3, yOf(top), formatPercent(top), 't-muted', 'end');
-  body += svgText(xOf(1), bottom + c.fontSize, '1 day', 't-muted', 'start');
-  body += svgText(xOf(last), bottom + c.fontSize, `${last} days`, 't-muted', 'end');
-  body += svgText(c.marginLeft, c.marginTop / 2, `${data.eventLabel} to ${data.outcomeLabel}`, 't');
-  body += svgText(c.marginLeft, c.height - c.marginBottom / 4,
-    `days after exposure; demo band +-${formatPercent(c.bandFraction)} around baseline, not a placebo band`, 't-muted');
+  body += svgText(c.marginLeft - c.yLabelGap, yOf(0), formatPercent(0), 't-muted', 'end');
+  body += svgText(c.marginLeft - c.yLabelGap, yOf(top), formatPercent(top), 't-muted', 'end');
 
+  // x axis: ticks at 1, 7 and 14 days. The first label starts at its tick, the last ends at its tick.
+  const xLabelY = bottom + c.tickLength + c.xLabelGap + smallFontPx / 2;
+  c.tickDays.forEach((day, i) => {
+    const x = xOf(day);
+    const anchor = i === 0 ? 'start' : i === c.tickDays.length - 1 ? 'end' : 'middle';
+    body += `<line class="axis" x1="${x}" y1="${bottom}" x2="${x}" y2="${bottom + c.tickLength}"/>`;
+    body += svgText(x, xLabelY, tickLabel(day), 't-muted', anchor, smallFontPx);
+  });
+
+  // Caption: wrapped by estimated width into its own band below the x labels.
+  const captionTop = xLabelY + smallFontPx / 2 + c.captionGap;
+  const caption = wrapText(
+    `days after exposure; demo band +-${formatPercent(c.bandFraction)} around baseline, not a placebo band`,
+    smallFontPx,
+    width - 2 * c.pad,
+  );
+  caption.forEach((line, i) => {
+    body += svgText(c.pad, captionTop + smallFontPx / 2 + i * c.captionLineHeight, line, 't-muted', 'start', smallFontPx);
+  });
+  body += svgText(c.marginLeft, c.marginTop / 2, `${data.eventLabel} to ${data.outcomeLabel}`, 't', 'start', fontPx);
+
+  const height = captionTop + caption.length * c.captionLineHeight + c.pad;
   return svgDoc({
-    width: c.width,
-    height: c.height,
+    width,
+    height,
     title: 'E2 Echo curve',
     desc: `Outcome rate by days after an exposure, with a demo band, ${data.eventLabel} to ${data.outcomeLabel}`,
     body,

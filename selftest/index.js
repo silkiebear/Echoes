@@ -9,5 +9,8 @@ export const tests = [
   './selftest/synth.test.js',
   './selftest/echo-demo.test.js',
   './selftest/views.test.js',
+  './selftest/layout.test.js',
+  './selftest/zoom.test.js',
+  './selftest/time.test.js',
   './selftest/theme.test.js',
 ];

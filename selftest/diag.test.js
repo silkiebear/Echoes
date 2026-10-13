@@ -86,6 +86,46 @@ test('output is capped at maxBytes with a visible notice', async () => {
   assert.ok(text.includes('TRUNCATED'), 'truncation notice missing');
 });
 
+test('NFC: a label registered composed is replaced when it occurs decomposed, and the reverse', async () => {
+  const composed = 'Caf\u00e9 Time';   // precomposed e with acute
+  const decomposed = 'Cafe\u0301 Time'; // "e" followed by a combining acute accent
+  const d = await fresh();
+  assert.equal(d.register(composed, 'label'), 'L0001', 'composed registration');
+  const out = d.safe(`met at ${decomposed}`);
+  assert.equal(out, 'met at L0001', 'decomposed occurrence not replaced');
+  const e = await fresh();
+  e.register(decomposed, 'label');
+  assert.equal(e.safe(`met at ${composed}`), 'met at L0001', 'composed occurrence not replaced');
+  assert.ok(!e.safe(`met at ${decomposed}`).includes('Cafe'), 'label text leaked');
+});
+
+// Scheme literals are joined from parts so no external-URL text appears in an app file (lint L2).
+test('captured stack lines keep only the path; scheme, host and port are removed', async () => {
+  const http = ['ht', 'tp', '://'].join('');
+  const https = ['ht', 'tps', '://'].join('');
+  const stack = [
+    'Error: boom',
+    `    at load (${http}localhost:8000/modules/gallery.js:123:22)`,
+    `    at remote (${https}cdn.example.test:8443/lib/x.js:9:1)`,
+    `    at fn@${http}localhost:8000/modules/gallery.js:40:5`,
+  ].join('\n');
+  const d = await fresh();
+  const stripped = d.stripOrigins(stack);
+  assert.ok(stripped.includes('    at load (/modules/gallery.js:123:22)'), `path kept: ${stripped}`);
+  assert.ok(stripped.includes('(/lib/x.js:9:1)'), 'https host path kept');
+  assert.ok(stripped.includes('fn@/modules/gallery.js:40:5'), 'firefox style path kept');
+  assert.ok(!/localhost|example\.test|8000|8443/.test(stripped), 'host or port left behind');
+  const target = new EventTarget();
+  d.captureErrors(target);
+  const errorEvent = new Event('error');
+  Object.defineProperty(errorEvent, 'error', { value: { message: 'boom', stack } });
+  target.dispatchEvent(errorEvent);
+  const text = d.build();
+  assert.ok(text.includes('/modules/gallery.js:123:22'), 'path missing from the diagnostics');
+  assert.ok(!text.includes('localhost'), 'host left in the diagnostics');
+  assert.equal(d.totalErrors(), 1, 'error count');
+});
+
 test('5000 registered strings and 100 KB of text redact within the time budget', async () => {
   const d = await fresh();
   const count = app.selftest.stringCount;

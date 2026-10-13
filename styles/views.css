@@ -39,9 +39,11 @@
 .flag-outline { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 4 3; }
 .pill { fill: var(--surface); stroke: var(--text-muted); stroke-width: 1; }
 
+/* Zoom host: scrolls in both axes (the pan). pan-x pan-y lets the browser scroll but not page-zoom on pinch. */
 .chart-scroll {
-  overflow-x: auto;
+  overflow: auto;
   max-width: 100%;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -76,4 +78,37 @@
 button[aria-pressed="true"] {
   background: var(--accent);
   color: var(--bg);
+}
+
+.axis { stroke: var(--text-muted); stroke-width: 1; }
+.dot { fill: var(--accent); }
+.tick, .bar { fill: var(--accent); }
+.tri-up { fill: var(--div-7); }
+.tri-down { fill: var(--div-1); }
+.tri-flat { fill: var(--text-muted); }
+.line-1 { stroke: var(--div-1); }
+.line-2 { stroke: var(--div-2); }
+.line-3 { stroke: var(--div-3); }
+.line-4 { stroke: var(--div-4); }
+.line-5 { stroke: var(--div-5); }
+.line-6 { stroke: var(--div-6); }
+.line-7 { stroke: var(--div-7); }
+
+select {
+  min-height: var(--touch);
+  max-width: 100%;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+
+label.select {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-1) 0;
 }

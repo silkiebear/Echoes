@@ -5,4 +5,5 @@ export const modules = [
   './diag-panel.js',
   './privacy-probe.js',
   './gallery.js',
+  './gallery-time.js',
 ];

@@ -8,6 +8,9 @@
 //   rr = rate / baseline
 // Effect 1: pe = 0.30, q = 0.30, baseline = 0.15 + 0.35 * 0.30 = 0.255, rr = 0.50 / 0.255 = 1.96.
 // Effect 2: pe = 0.20, q = 1 - 0.80^2 = 0.36, baseline = 0.12 + 0.28 * 0.36 = 0.221, rr = 0.40 / 0.221 = 1.81.
+// Effect 3 (Deadline to Anxious, lags 7 to 14, E2): the exposure rate is 0.05, not 0.25. At 0.25, q = 1 - 0.75^8 = 0.90,
+// so the outcome baseline is already about 0.38 and lags 7 to 14 (0.40) show no contrast (measured ratio 1.05).
+// At 0.05, q = 0.34, baseline = 0.20 + 0.20 * 0.34 = 0.27, ratio 0.40 / 0.27 = 1.48 (measured 1.46).
 // The ranges below allow about +-25 percent: sampling noise on 1460 days is about +-8 percent.
 export const synth = {
   seed: 1729,
@@ -20,7 +23,7 @@ export const synth = {
     { name: 'Headache', code: 'B-', p: 0.12 },
     { name: 'Long walk', code: 'A+', p: 0.30 },
     { name: 'Calm', code: 'M+', p: 0.25 },
-    { name: 'Deadline', code: 'W-', p: 0.25 },
+    { name: 'Deadline', code: 'W-', p: 0.05 },
     { name: 'Anxious', code: 'M-', p: 0.20 },
     { name: 'Friends meetup', code: 'P+', p: 0.30 }, // weekday modifier below replaces p
     { name: 'Morning run', code: 'A+', p: 0.40 },
@@ -44,9 +47,20 @@ export const synth = {
     { exposure: 'Deadline W-', outcome: 'Anxious M-', lagMin: 7, lagMax: 14, pBase: 0.20, pExposed: 0.40 },
   ],
   weekday: [{ label: 'Friends meetup P+', weekend: 0.60, weekday: 0.15 }],
+  // Mood (integer 1 to 5, index 0 = "bad"). Planted effect: the day after Poor sleep S-, each mood score
+  // drops one step with a seeded chance drawn once from sizeRange. Uses its own PRNG (seed + seedOffset),
+  // so the label stream above is unchanged.
+  mood: {
+    weights: [0.10, 0.20, 0.30, 0.25, 0.15], // score 1 to 5
+    seedOffset: 7919,
+    sizeRange: [0.3, 0.5],
+    poorSleep: 'Poor sleep S-',
+  },
   expect: {
     labelCount: [20, 24],
     coffeeSleep1d: [1.5, 2.4],  // planted effect 1, 1-day window (derived above: 1.96)
     alcoholHeadache1d: [1.4, 2.3], // planted effect 2, 1-day window (derived above: 1.81)
+    minRatio: 1.25,             // planted effect 3 (Deadline to Anxious): mean rate over lags 7 to 14 >= baseline * minRatio (measured 1.46)
+    moodAfterPoorSleep: [-0.6, -0.12], // mean mood difference, day after Poor sleep minus other days (expected about -0.36)
   },
 };

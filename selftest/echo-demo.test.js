@@ -1,5 +1,9 @@
 import { test, assert } from '../core/harness.js';
-import { computeEchoes, demoFlags } from '../core/echo-demo.js';
+import { computeEchoes, demoFlags, buildE2Data } from '../core/echo-demo.js';
+import { generate } from '../core/synth.js';
+import { synth as synthCfg } from '../config/synth.js';
+import { viewSettings } from '../config/views.js';
+import { labelIdOf } from '../core/time-demo.js';
 
 // Ten days (0 to 9). A on days 0, 2, 4, 6. B on days 1, 3, 5, 8.
 // Window of 2 days: each A day has exactly one of the next two days with B (days 1, 3, 5, 8 respectively),
@@ -37,6 +41,18 @@ test('rate, rr and diff are null when nExposed is below the minimum', () => {
   assert.equal(rec.rate, null, 'rate');
   assert.equal(rec.rr, null, 'rr');
   assert.equal(rec.diff, null, 'diff');
+});
+
+// Planted effect 3: Deadline W- to Anxious M- at lags 7 to 14 (synth config). Mean rate over those lags must be
+// at least the overall baseline times expect.minRatio. The band and threshold are not widened to pass.
+test('planted effect 3 (Deadline to Anxious, lags 7 to 14): mean rate >= baseline x minRatio', () => {
+  const data = generate(synthCfg);
+  const e2 = buildE2Data(data, labelIdOf(data, 'Deadline W-'), labelIdOf(data, 'Anxious M-'), viewSettings.curve);
+  const lagged = e2.points.filter((p) => p.day >= 7 && p.day <= 14);
+  assert.equal(lagged.length, 8, 'lag points');
+  const mean = lagged.reduce((sum, p) => sum + p.rate, 0) / lagged.length;
+  const minRate = e2.baseline * synthCfg.expect.minRatio;
+  assert.ok(mean >= minRate, `mean rate ${mean.toFixed(4)} below baseline ${e2.baseline.toFixed(4)} x ${synthCfg.expect.minRatio}`);
 });
 
 test('demo flags: lowSample below threshold, shortWindow for 1 day, none for null results', () => {
