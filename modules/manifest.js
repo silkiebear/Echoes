@@ -6,4 +6,5 @@ export const modules = [
   './privacy-probe.js',
   './gallery.js',
   './gallery-time.js',
+  './gallery-periodic.js',
 ];

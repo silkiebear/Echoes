@@ -27,13 +27,18 @@
 .bin-6 { fill: var(--div-6); }
 .bin-7 { fill: var(--div-7); }
 .na { fill: var(--surface-2); }
+.seq-1 { fill: var(--seq-1); }
+.seq-2 { fill: var(--seq-2); }
+.seq-3 { fill: var(--seq-3); }
+.seq-4 { fill: var(--seq-4); }
+.seq-5 { fill: var(--seq-5); }
 
 .t { fill: var(--text); stroke: var(--surface); stroke-width: 3px; paint-order: stroke; }
 .t-muted { fill: var(--text-muted); stroke: var(--surface); stroke-width: 3px; paint-order: stroke; }
 .dot { fill: var(--text); }
 .band { fill: var(--accent); }
 .line { fill: none; stroke: var(--accent); stroke-width: 2; }
-.baseline { stroke: var(--text-muted); stroke-dasharray: 4 4; }
+.baseline { fill: none; stroke: var(--text-muted); stroke-dasharray: 4 4; }
 .axis { stroke: var(--border); }
 .row-bg { fill: var(--surface-2); }
 .flag-outline { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 4 3; }
@@ -80,7 +85,7 @@ button[aria-pressed="true"] {
   color: var(--bg);
 }
 
-.axis { stroke: var(--text-muted); stroke-width: 1; }
+.axis { fill: none; stroke: var(--text-muted); stroke-width: 1; }
 .dot { fill: var(--accent); }
 .tick, .bar { fill: var(--accent); }
 .tri-up { fill: var(--div-7); }
@@ -94,6 +99,14 @@ button[aria-pressed="true"] {
 .line-6 { stroke: var(--div-6); }
 .line-7 { stroke: var(--div-7); }
 
+/* Fallback for SVG shapes with no class rule: the browser default fill is black, so use a theme colour.
+   Element selectors have lower specificity than the class rules, so classes still win. */
+svg rect, svg path, svg polygon, svg circle { fill: var(--text-muted); }
+svg text { fill: var(--text); }
+svg line, svg polyline { fill: none; stroke: var(--text-muted); }
+
+select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
 select {
   min-height: var(--touch);
   max-width: 100%;
@@ -103,6 +116,12 @@ select {
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
+  accent-color: var(--accent);
+}
+
+/* Space between label and select uses a margin, not only flex gap, in case flex gap is not supported (UNVERIFIED on iOS). */
+label.select > span {
+  margin-right: var(--space-1);
 }
 
 label.select {

@@ -2,6 +2,9 @@
 // Config shape: see app/config/synth.js. Output: { labels: [{id, text, code}], days: [{day, date, weekday, labels, mood}] }
 // where mood is an integer 1 (bad) to 5 (great).
 
+import { weekdayOf } from './calendar.js';
+import { buildEntries } from './time-entries.js';
+
 const DAY_MS = 86400000;
 const SATURDAY = 6;
 const SUNDAY = 0;
@@ -45,6 +48,9 @@ export function generate(cfg) {
     { exposure: idOf.get(e.exposure), lagMin: e.lagMin, lagMax: e.lagMax, pBase: e.pBase, pExposed: e.pExposed },
   ]));
   const weekdayByLabel = new Map((cfg.weekday || []).map((w) => [idOf.get(w.label), w]));
+  const seasonal = cfg.seasonal
+    ? { id: idOf.get(cfg.seasonal.label), months: cfg.seasonal.months, multiplier: cfg.seasonal.multiplier }
+    : null;
   const has = labels.map(() => new Uint8Array(cfg.days));
   const start = Date.parse(`${cfg.startDate}T00:00:00Z`);
   const days = [];
@@ -56,7 +62,9 @@ export function generate(cfg) {
 
   for (let t = 0; t < cfg.days; t++) {
     const date = new Date(start + t * DAY_MS);
-    const weekday = date.getUTCDay();
+    const iso = date.toISOString().slice(0, 10);
+    const month = Number(iso.slice(5, 7));
+    const weekday = weekdayOf(iso);
     const isWeekend = weekday === SATURDAY || weekday === SUNDAY;
     const ids = [];
     for (const label of labels) {
@@ -68,6 +76,9 @@ export function generate(cfg) {
       } else if (modifier) {
         p = isWeekend ? modifier.weekend : modifier.weekday;
       }
+      if (seasonal && label.id === seasonal.id && seasonal.months.includes(month)) {
+        p = Math.min(1, p * seasonal.multiplier);
+      }
       if (rnd() < p) {
         has[label.id][t] = 1;
         ids.push(label.id);
@@ -76,7 +87,10 @@ export function generate(cfg) {
     const afterSleep = t > 0 && has[sleepId][t - 1] === 1;
     let mood = pickScore(moodRnd(), cfg.mood.weights);
     if (afterSleep && moodRnd() < dropChance) mood = Math.max(1, mood - 1); // planted: one step lower
-    days.push({ day: t, date: date.toISOString().slice(0, 10), weekday, labels: ids, mood });
+    days.push({ day: t, date: iso, weekday, labels: ids, mood });
   }
-  return { labels, days };
+  // Own PRNG for times, so the label and mood streams are unchanged.
+  const timeRnd = mulberry32(cfg.seed + cfg.timeOfDay.seedOffset);
+  const entries = buildEntries(days, labels, cfg.timeOfDay, timeRnd);
+  return { labels, days, entries };
 }

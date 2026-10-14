@@ -20,6 +20,11 @@
   --touch: 44px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --seq-1: #28486b;
+  --seq-2: #2c5a8a;
+  --seq-3: #3f7fc0;
+  --seq-4: #74a9e0;
+  --seq-5: #bcd9f5;
 }
 
 :root[data-theme="light"] {
@@ -34,6 +39,11 @@
   --diverge-neg: #2b6cb0;
   --diverge-pos: #d9731f;
   color-scheme: light;
+  --seq-1: #eef4fb;
+  --seq-2: #c9dcf2;
+  --seq-3: #8fb8e3;
+  --seq-4: #4f8bcb;
+  --seq-5: #1f5fa0;
 }
 
 :root[data-theme="dark"] {

@@ -1,4 +1,5 @@
-// T1 Year Grid. Data (time-demo.js buildYearData): { year, firstWeekday, days: [{ index, weekday, month, dom, mood, present }] }.
+// T1 Year Grid. Data (time-demo.js buildYearData): { year, firstRow, days: [{ index, row, month, dom, mood, present }] }.
+// row is the position in the week (0 = time.weekStart), firstRow is the row of 1 January.
 // opts.variant: 'a' columns = weeks, rows = weekdays; 'b' rows = months, columns = days 1 to 31.
 // opts.metric: 'mood' (five steps on the colour bins) or 'label' (present or absent). opts.width: available CSS px.
 // The grid scrolls inside its card when the cells reach cellMin. Zoom comes from the gallery (attachZoom).
@@ -6,7 +7,8 @@
 import { svgDoc, svgText } from '../core/svg.js';
 import { viewSettings } from '../config/views.js';
 import { moodBin, presenceBin, moodLegend, keyRow } from './diverge.js';
-import { weekdayShort, monthShort } from '../core/time-demo.js';
+import { monthShort } from '../core/time-demo.js';
+import { weekdayLabels } from '../core/calendar.js';
 
 const t = viewSettings.time;
 const g = t.yearGrid;
@@ -30,24 +32,25 @@ function cell(x, y, size, bin) {
 }
 
 function weeksGrid(data, metric, available) {
-  const cols = Math.ceil((data.days.length + data.firstWeekday) / WEEKS);
+  const cols = Math.ceil((data.days.length + data.firstRow) / WEEKS);
   const size = fitCell(available, cols, g.cellMin);
   const pitch = size + g.gap;
   const x0 = g.gutter;
   const y0 = g.topBand;
+  const names = weekdayLabels(t.weekStart);
   let body = '';
   for (let m = 0; m < MONTHS; m++) {
     const first = data.days.find((d) => d.month === m && d.dom === 1);
     if (!first) continue;
-    const col = Math.floor((first.index + data.firstWeekday) / WEEKS);
+    const col = Math.floor((first.index + data.firstRow) / WEEKS);
     body += svgText(x0 + col * pitch, g.topBand / 2, monthShort(m), 't-muted', 'start', small);
   }
   for (const row of g.weekdayRows) {
-    body += svgText(x0 - t.smallGap, y0 + row * pitch + size / 2, weekdayShort(row), 't-muted', 'end', small);
+    body += svgText(x0 - t.smallGap, y0 + row * pitch + size / 2, names[row], 't-muted', 'end', small);
   }
   for (const d of data.days) {
-    const col = Math.floor((d.index + data.firstWeekday) / WEEKS);
-    body += cell(x0 + col * pitch, y0 + d.weekday * pitch, size, binOf(d, metric));
+    const col = Math.floor((d.index + data.firstRow) / WEEKS);
+    body += cell(x0 + col * pitch, y0 + d.row * pitch, size, binOf(d, metric));
   }
   return { body, gridWidth: x0 + cols * pitch - g.gap + t.pad, gridHeight: y0 + WEEKS * pitch - g.gap };
 }

@@ -6,5 +6,10 @@ import t1 from './t1-year-grid.js';
 import t2 from './t2-lanes.js';
 import t3 from './t3-tick-strip.js';
 import t4 from './t4-rolling.js';
+import p1 from './p1-weekday-hour.js';
+import p2 from './p2-dial.js';
+import e4 from './e4-before-after.js';
+import p3 from './p3-weekday-profile.js';
+import p4 from './p4-month-profile.js';
 
-export const views = [e1, e2, e3, t1, t2, t3, t4];
+export const views = [e1, e2, e3, t1, t2, t3, t4, p1, p2, e4, p3, p4];

@@ -1,16 +1,5 @@
 import { app } from '../config/app.js';
 
-const FILE_PREFIX = 'echoes-diagnostics';
-
-function pad(n) {
-  return String(n).padStart(2, '0');
-}
-
-function fileName(date) {
-  const day = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
-  return `${FILE_PREFIX}-${day}-${pad(date.getHours())}${pad(date.getMinutes())}.txt`;
-}
-
 function firstLines(text) {
   return text.split('\n').slice(0, app.diag.previewLines).join('\n');
 }
@@ -81,7 +70,7 @@ export default {
     downloadButton.addEventListener('click', () => {
       const text = build();
       const bytes = new Blob([text]).size;
-      const name = fileName(new Date());
+      const name = diag.fileNameFor(new Date());
       download(text, name);
       status.textContent = `Saved ${name} (${bytes} bytes)`;
       diag.log('INFO', `diagnostics downloaded bytes=${bytes} includeData=${include.checked}`);
@@ -89,7 +78,7 @@ export default {
 
     async function share() {
       const text = build();
-      const name = fileName(new Date());
+      const name = diag.fileNameFor(new Date());
       try {
         const file = new File([text], name, { type: 'text/plain' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -100,7 +89,8 @@ export default {
         status.textContent = 'Shared.';
       } catch (err) {
         const name = err ? err.name : 'unknown';
-        status.textContent = name === 'AbortError' ? 'Share cancelled.' : 'Share failed.';
+        if (name === 'AbortError') return;
+        status.textContent = 'Share failed.';
         diag.log('ERROR', `share failed: ${name}`);
       }
     }

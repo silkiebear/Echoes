@@ -3,7 +3,7 @@ import { synth as cfg } from '../config/synth.js';
 import { viewSettings } from '../config/views.js';
 import { generate } from '../core/synth.js';
 import { buildRollingData, buildStripData, labelIdOf } from '../core/time-demo.js';
-import { trendSlope, trendWord } from '../views/t3-tick-strip.js';
+import { trendSlope, trendWord, rowTrend } from '../views/t3-tick-strip.js';
 import { moodBin, presenceBin } from '../views/diverge.js';
 
 const data = generate(cfg);
@@ -35,6 +35,16 @@ test('trend: slope of a rising series is positive, and the word follows the flat
   assert.equal(trendWord(trendSlope([1, 2, 3, 4])), 'rising', 'rising');
   assert.equal(trendWord(trendSlope([4, 3, 2, 1])), 'falling', 'falling');
   assert.equal(trendWord(trendSlope([2, 2, 2, 2])), 'flat', 'flat');
+});
+
+// Planted series, 30 days per month. The rising series goes from 4 to 8 counts: a least-squares slope of 0.39 counts
+// per month (below the old count threshold of 0.5, so the old code read it as flat) and 0.013 density per month.
+test('T3 row trend uses density: planted rising, falling and flat series give up, down and flat', () => {
+  const bins = Array.from({ length: 12 }, () => ({ days: 30 }));
+  const rising = [4, 4, 5, 5, 5, 6, 6, 7, 7, 7, 8, 8];
+  assert.equal(rowTrend(bins, rising), 'rising', 'rising');
+  assert.equal(rowTrend(bins, [...rising].reverse()), 'falling', 'falling');
+  assert.equal(rowTrend(bins, Array(12).fill(9)), 'flat', 'flat');
 });
 
 test('mood and presence map into the colour bins 1 to 7', () => {

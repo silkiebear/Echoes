@@ -6,7 +6,8 @@ import { synth as synthConfig } from '../config/synth.js';
 import { views } from '../views/index.js';
 import { generate } from '../core/synth.js';
 import { computeEchoes, buildE1Data, buildE2Data, buildE3Data } from '../core/echo-demo.js';
-import { banner, makeCard, variantButtons, checkToggle } from '../core/gallery-kit.js';
+import { banner, makeCard, variantButtons, checkToggle, selectControl } from '../core/gallery-kit.js';
+import { buildE4Data } from '../core/event-study-demo.js';
 
 const g = viewSettings.gallery;
 
@@ -59,6 +60,30 @@ function echoCard(view, viewData) {
   return { card, redraw };
 }
 
+// E4 has its own controls (exposure and window), so its data is rebuilt on each change.
+function e4Card(view, data) {
+  const es = viewSettings.eventStudy;
+  const state = { exposureId: labelId(data, 'Alcohol H-'), windowDays: es.defaultWindow };
+  let e4 = buildE4Data(data, state.exposureId, state.windowDays);
+  return makeCard({
+    heading: `${view.id} ${view.title}`,
+    note: `Event = a day with the exposure and none in the previous ${es.gapDays} days. Bars: change in the share of days with each label, after minus before. Demo flags only.`,
+    controls: (redraw) => [
+      selectControl('Exposure', data.labels.map((l) => ({ value: l.id, label: l.text })), state.exposureId, (value) => {
+        state.exposureId = Number(value);
+        e4 = buildE4Data(data, state.exposureId, state.windowDays);
+        redraw();
+      }),
+      selectControl('Window', es.windows.map((w) => ({ value: w, label: `${w} days` })), state.windowDays, (value) => {
+        state.windowDays = Number(value);
+        e4 = buildE4Data(data, state.exposureId, state.windowDays);
+        redraw();
+      }),
+    ],
+    draw: (width) => view.render(e4, { width }),
+  });
+}
+
 // Deliberate error for checking diagnostics: the message names a synthetic label, which must appear as a token.
 // The status line is an aria-live region; it reports the count after the error has been captured.
 function errorCard(diag, sampleText) {
@@ -98,7 +123,10 @@ export default {
     const viewData = buildViewData(data);
 
     container.append(banner('Synthetic data. Not your export. Badges marked DEMO are forced for display, not computed.'));
-    const cards = views.filter((v) => v.id.startsWith('E')).map((view) => echoCard(view, viewData[view.id]));
+    const cards = [
+      ...views.filter((v) => v.id.startsWith('E') && v.id !== 'E4').map((view) => echoCard(view, viewData[view.id])),
+      e4Card(views.find((v) => v.id === 'E4'), data),
+    ];
     for (const { card } of cards) container.append(card);
     for (const { redraw } of cards) redraw();
     container.append(errorCard(ctx.diag, data.labels[0].text));

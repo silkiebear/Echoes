@@ -7,7 +7,7 @@ export const viewSettings = {
   text: {
     fontPx: 12,         // regular chart text (svgText writes this as font-size)
     smallFontPx: 11,    // axis labels, captions, weekday and month names
-    charWidth: 0.6,     // estimated advance per character, in em (start value; only the layout test uses it)
+    charWidthEm: 0.6,   // estimated advance per character, in em (start value; only the layout test uses it)
     tolerance: 1,       // text boxes may touch or overlap by this many units
     outlinePad: 4,      // text must stay at least this far inside or outside a dashed outline
   },
@@ -18,7 +18,13 @@ export const viewSettings = {
   },
   zoom: { step: 1.25, min: 1, max: 4 }, // scale factors for + and - and pinch (1 = unzoomed)
   echo: { minExposedDays: 5 },          // demo: fewer exposed days than this gives a null rate ratio
-  gallery: { e1Exposure: 'Late coffee F-', e2Exposure: 'Deadline W-', e2Outcome: 'Anxious M-' },
+  gallery: {
+    e1Exposure: 'Late coffee F-',
+    e2Exposure: 'Deadline W-',
+    e2Outcome: 'Anxious M-',
+    dialLabels: ['Late coffee F-', 'Morning run A+', 'Screen time H-'], // rings for P2 variant b (one ring per label)
+    periodicLabel: 'Late coffee F-', // default label for P1 and P2 variant a
+  },
   matrix: {
     maxOutcomes: 8,       // E1 rows in the gallery (labels other than the exposure, in label order)
     cellWidth: 56,
@@ -69,7 +75,22 @@ export const viewSettings = {
     pillGap: 6,
     maxRows: 15,
   },
+  // E4 event study (core/event-study-demo.js). Demo flags only; no placebo or FDR correction in this phase.
+  eventStudy: {
+    gapDays: 7,               // an event is a day with the exposure and none in the previous gapDays
+    windows: [3, 7, 14, 30],  // before and after window lengths in days
+    defaultWindow: 3,
+    maxRows: 12,
+    minEvents: 10,            // fewer events than this gets the lowSample demo flag
+    view: { barHeight: 14, rowGap: 8, shadeBins: 4, maxBarWidth: 120, labelMin: 80 },
+  },
+  ui: {
+    resizeDebounceMs: 150,  // charts redraw this long after the last resize or rotation event
+    resizeMinChangePx: 1,   // a card redraws only when its measured width changed by more than this
+  },
   time: {
+    weekStart: 1,            // first column of the week, JS getDay convention (1 = Monday)
+    dayBoundaryMinutes: 240, // entries before 04:00 belong to the previous day (day-level views)
     pad: 8,
     smallGap: 4,
     moodNames: ['bad', 'low', 'okay', 'good', 'great'], // mood score 1 to 5
@@ -84,8 +105,16 @@ export const viewSettings = {
       gap: 2,
       gutter: 30,        // room for weekday or month names on the left
       topBand: 16,       // room for month names (a) or day numbers (b) above the grid
-      weekdayRows: [1, 3, 5],
+      weekdayRows: [0, 2, 4], // rows in week order: with time.weekStart 1 these are Mon, Wed, Fri
       dayLabels: [1, 10, 20, 31],
+    },
+    // P3 weekday and P4 month profiles (views/p3-weekday-profile.js, p4-month-profile.js).
+    profile: { barWidth: 22, barGap: 8, plotHeight: 120, marginLeft: 40, labelRoom: 30, minPlotWidth: 200 },
+    periodic: {
+      pillText: 'low time-of-day diversity',
+      pillExplain: 'Most entries are logged at the same clock time, so the time pattern says little.',
+      p1: { cellMin: 12, cellMax: 22, gap: 2, gutter: 36, topBand: 18, rowLabelGap: 4, hourTicks: [0, 6, 12, 18], steps: 5 },
+      p2: { diameter: 220, innerRadius: 24, ringGap: 3, tickLength: 6, labelGap: 10, maxRings: 3, hourTicks: [0, 6, 12, 18] },
     },
     lanes: {
       labels: ['Late coffee F-', 'Poor sleep S-', 'Alcohol H-', 'Headache B-', 'Long walk A+', 'Calm M+'],
@@ -113,7 +142,7 @@ export const viewSettings = {
       countGap: 6,
       triHalf: 5,            // change triangle half-width
       triHeight: 8,          // change triangle height
-      trendFlatSlope: 0.5,   // least-squares slope (count per month) below this is "flat"
+      trendFlatSlope: 0.01,  // least-squares slope of density (share of days per month) below this is "flat"; 0.01 is 12 points over 12 months
     },
     rolling: {
       labels: ['Poor sleep S-', 'Calm M+', 'Anxious M-'],
@@ -129,6 +158,8 @@ export const viewSettings = {
       minPlotWidth: 200,
       yHeadroom: 1.1,
       minYMax: 0.1,          // y axis never shorter than this rate
+      pxPerPoint: 2,         // at most one plotted point per this many CSS px (longer series are bucket-averaged)
+      lineWidth: 1.5,        // polyline stroke width, CSS px
     },
   },
 };

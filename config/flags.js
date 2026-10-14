@@ -11,6 +11,12 @@ export const flags = [
   { id: 'directionAmbiguity', short: 'A/B?', description: 'Direction A to B and B to A cannot be told apart.' },
 ];
 
+// Periodicity views (P1, P2): flag low time-of-day diversity when most entries share one clock time.
+export const timeDiversity = {
+  topShareMax: 0.8,      // share of entries at the single most common minute above this is "low"
+  minDistinctHours: 4,   // fewer distinct clock hours than this is "low"
+};
+
 export const demo = {
   lowSampleBelow: 10,        // exposed days below this get lowSample
   shortWindowDaysAtMost: 1,  // windows this short get shortWindow

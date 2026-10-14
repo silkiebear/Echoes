@@ -1,12 +1,12 @@
 // Text-fit estimates for generated SVG text. There are no font metrics here: width = characters x font size
-// x charWidth (config/views.js). The layout test uses these boxes to catch gross overflow and overlap; it is
+// x charWidthEm (config/views.js). The layout test uses these boxes to catch gross overflow and overlap; it is
 // not a pixel check, and real glyph widths differ.
 import { viewSettings } from '../config/views.js';
 
-const { charWidth, tolerance } = viewSettings.text;
+const { charWidthEm, tolerance } = viewSettings.text;
 
 export function estimateWidth(text, fontPx) {
-  return String(text).length * fontPx * charWidth;
+  return String(text).length * fontPx * charWidthEm;
 }
 
 // svgText centres the text on y (dy 0.35em), so the box runs half a font size above and below y.

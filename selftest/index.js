@@ -13,4 +13,12 @@ export const tests = [
   './selftest/zoom.test.js',
   './selftest/time.test.js',
   './selftest/theme.test.js',
+  './selftest/calendar.test.js',
+  './selftest/t1-week.test.js',
+  './selftest/computed-style.test.js',
+  './selftest/synth-time.test.js',
+  './selftest/time-diversity.test.js',
+  './selftest/period.test.js',
+  './selftest/event-study.test.js',
+  './selftest/profile.test.js',
 ];

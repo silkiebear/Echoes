@@ -1,7 +1,7 @@
 // T3 Tick Strip. Data (time-demo.js buildStripData): { bins: [{ key, days, counts }], labels: [{ id, text }] }.
 // One row per label over the last `strip.bins` months. Bar height = density (days with the label / days in the month).
 // Printed beside each row: the last month's count, the change against the previous month (triangle path and number),
-// and the trend over the months (least-squares slope of the counts: rising, falling or flat).
+// and the trend over the months (least-squares slope of the density: rising, falling or flat).
 // opts.width: available CSS px. The row is wider when the text needs it.
 import { svgDoc, svgText } from '../core/svg.js';
 import { viewSettings } from '../config/views.js';
@@ -30,6 +30,15 @@ export function trendSlope(values) {
 export function trendWord(slope) {
   if (Math.abs(slope) < S.trendFlatSlope) return 'flat';
   return slope > 0 ? 'rising' : 'falling';
+}
+
+export function densityOf(bin, count) {
+  return bin.days > 0 ? count / bin.days : 0;
+}
+
+// Trend of the density the bars show. Raw counts scale with month length, so they are not used.
+export function rowTrend(bins, counts) {
+  return trendWord(trendSlope(bins.map((bin, b) => densityOf(bin, counts[b]))));
 }
 
 function triangle(cx, cy, delta) {
@@ -68,9 +77,9 @@ function render(data, opts = {}) {
     const delta = last - prev;
     const cy = y0 + barBase / 2 + pad / 2;
     body += svgText(pad, y0 + pad + fontPx / 2, label.text, 't');
-    body += svgText(pad, y0 + S.rowHeight - pad / 2 - smallFontPx / 2, `trend ${trendWord(trendSlope(counts))}`, 't-muted', 'start', smallFontPx);
+    body += svgText(pad, y0 + S.rowHeight - pad / 2 - smallFontPx / 2, `trend ${rowTrend(bins, counts)}`, 't-muted', 'start', smallFontPx);
     bins.forEach((bin, b) => {
-      const density = bin.days > 0 ? counts[b] / bin.days : 0;
+      const density = densityOf(bin, counts[b]);
       const h = density * barBase;
       body += `<rect class="bar" x="${x0 + b * S.barPitch}" y="${y0 + barBase - h + pad / 2}" width="${S.barWidth}" height="${h}"/>`;
     });

@@ -1,6 +1,7 @@
 // Pure data builders for the time views (T1 to T4). Input is the generated synthetic data (core/synth.js).
 // Shapes are documented here; the views only draw them. Nothing here is a statistic.
 import { viewSettings } from '../config/views.js';
+import { columnOf } from './calendar.js';
 
 const T = viewSettings.time;
 
@@ -8,11 +9,6 @@ export function labelIdOf(synth, text) {
   const label = synth.labels.find((l) => l.text === text);
   if (!label) throw new Error('time-demo: a configured synthetic label is missing');
   return label.id;
-}
-
-// Short weekday name for index 0 (Sunday) to 6, in the browser locale. 7 Jan 2024 was a Sunday.
-export function weekdayShort(index) {
-  return new Date(Date.UTC(2024, 0, 7 + index)).toLocaleDateString(undefined, { weekday: 'short', timeZone: 'UTC' });
 }
 
 // Short month name for month 0 (January) to 11.
@@ -25,16 +21,17 @@ export function monthYear(iso) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
-// Shape: { year, firstWeekday, days: [{ index, weekday, month, dom, mood, present }] } for one calendar year.
-// weekday 0 (Sunday) to 6; month 0 to 11; dom 1 to 31; present 1 when the label is on that day, else 0.
+// Shape: { year, firstRow, days: [{ index, row, month, dom, mood, present }] } for one calendar year.
+// row 0 to 6 is the position in the week (time.weekStart); the weekday comes from the date, never from a stored field.
+// month 0 to 11; dom 1 to 31; present 1 when the label is on that day, else 0.
 export function buildYearData(synth, year, labelId) {
   const yearDays = synth.days.filter((d) => d.date.startsWith(`${year}-`));
   return {
     year,
-    firstWeekday: yearDays[0].weekday,
+    firstRow: columnOf(yearDays[0].date, T.weekStart),
     days: yearDays.map((d, index) => ({
       index,
-      weekday: d.weekday,
+      row: columnOf(d.date, T.weekStart),
       month: Number(d.date.slice(5, 7)) - 1,
       dom: Number(d.date.slice(8, 10)),
       mood: d.mood,

@@ -94,13 +94,22 @@ export function stripOrigins(text) {
   return String(text).replace(ORIGIN, '');
 }
 
-function recordError(kind, value, fallback) {
+// Cross-origin scripts report only "Script error." with no file, line or stack. Say so, so the entry
+// is not mistaken for a fault in the app.
+const BARE_SCRIPT_ERROR = 'Script error.';
+const BARE_SCRIPT_DETAIL = 'Script error. [no details: cross-origin or injected script]';
+
+function recordError(kind, value, fallback, event = null) {
   const info = describeValue(value);
+  const file = event && event.filename ? safe(stripOrigins(String(event.filename))) : '';
+  let message = info.message || fallback;
+  if (message === BARE_SCRIPT_ERROR && !file) message = BARE_SCRIPT_DETAIL;
   errorTotal += 1;
   errorEntries.push({
     time: new Date().toISOString(),
     kind,
-    message: safe(stripOrigins(info.message || fallback)),
+    message: safe(stripOrigins(message)),
+    where: file ? `${file}:${event.lineno || 0}:${event.colno || 0}` : '',
     stack: safe(stripOrigins(info.stack)),
   });
   trimTo(errorEntries, app.diag.maxErrors);
@@ -114,11 +123,25 @@ export function captureErrors(target = typeof window !== 'undefined' ? window : 
   if (!target || target === capturedTarget) return;
   capturedTarget = target;
   target.addEventListener('error', (event) => {
-    recordError('ERROR', event.error || event.message, 'script error');
+    recordError('ERROR', event.error || event.message, 'script error', event);
   });
   target.addEventListener('unhandledrejection', (event) => {
     recordError('UNHANDLED', event.reason, 'unhandled rejection');
   });
+}
+
+const FILE_PREFIX = 'echoes-diagnostics';
+const TWO_DIGITS = 2;
+const MONTH_OFFSET = 1; // JavaScript months are 0-based
+
+function pad2(n) {
+  return String(n).padStart(TWO_DIGITS, '0');
+}
+
+// Local time, so the name matches the time shown on the device when the file was saved.
+export function fileNameFor(date) {
+  const day = `${date.getFullYear()}${pad2(date.getMonth() + MONTH_OFFSET)}${pad2(date.getDate())}`;
+  return `${FILE_PREFIX}-${day}-${pad2(date.getHours())}${pad2(date.getMinutes())}.txt`;
 }
 
 export function setSelftest(summary) {
@@ -157,7 +180,7 @@ function errorLines() {
   if (errorEntries.length === 0) return ['no errors captured'];
   const lines = [];
   for (const e of errorEntries) {
-    lines.push(`[${e.time}] ${e.kind}: ${e.message}`);
+    lines.push(`[${e.time}] ${e.kind}: ${e.message}${e.where ? ` at ${e.where}` : ''}`);
     if (e.stack) lines.push(...e.stack.split('\n').map((line) => `    ${line}`));
   }
   return lines;

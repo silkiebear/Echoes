@@ -145,3 +145,46 @@ test('5000 registered strings and 100 KB of text redact within the time budget',
   assert.ok(elapsed < app.selftest.perfBudgetMs, `took ${Math.round(elapsed)} ms`);
   assert.ok(!out.toLowerCase().includes('activity'), 'a registered string leaked');
 });
+
+// Built from parts so the scheme literal does not appear in app files (URL lint).
+const SCHEME = 'ht' + 'tp:';
+
+// Fake target: captures the listener so the test can call it with a plain object shaped like an error event.
+function fakeTarget() {
+  const listeners = {};
+  return { listeners, addEventListener: (type, fn) => { listeners[type] = fn; } };
+}
+
+test('error capture: origin stripped from the file name, line and column kept', async () => {
+  const d = await fresh();
+  const target = fakeTarget();
+  d.captureErrors(target);
+  target.listeners.error({ message: 'boom', error: null, filename: `${SCHEME}//localhost:9/modules/gallery.js`, lineno: 12, colno: 3 });
+  const text = d.build();
+  assert.ok(text.includes('boom at /modules/gallery.js:12:3'), 'path, line and column kept');
+  assert.ok(!text.includes('localhost:9'), 'host and port removed');
+});
+
+test('error capture: a registered label in an error message is shown as its token', async () => {
+  const d = await fresh();
+  const token = d.register('Headache', 'label');
+  const target = fakeTarget();
+  d.captureErrors(target);
+  target.listeners.error({ message: 'failed for Headache', error: null, filename: '', lineno: 0, colno: 0 });
+  const text = d.build();
+  assert.ok(text.includes(`failed for ${token}`), 'token expected');
+  assert.ok(!text.includes('Headache'), 'label text must not appear');
+});
+
+test('error capture: bare "Script error." without a file gets the cross-origin detail', async () => {
+  const d = await fresh();
+  const target = fakeTarget();
+  d.captureErrors(target);
+  target.listeners.error({ message: 'Script error.', error: null, filename: '', lineno: 0, colno: 0 });
+  assert.ok(d.build().includes('Script error. [no details: cross-origin or injected script]'), 'detail expected');
+});
+
+test('fileNameFor: local date and time in a fixed pattern', async () => {
+  const d = await fresh();
+  assert.equal(d.fileNameFor(new Date(2026, 9, 14, 7, 5)), 'echoes-diagnostics-20261014-0705.txt');
+});

@@ -4,11 +4,31 @@ import { viewSettings } from '../config/views.js';
 import { mountSvg, sizeSvg } from './svg.js';
 import { attachZoom } from './zoom.js';
 
+const liveCards = new Set();
+let resizeTimer = null;
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+// Rotation and resize change the measured width, so the charts are redrawn once the events settle.
+function redrawChangedCards() {
+  for (const entry of liveCards) {
+    if (entry.changed()) entry.redraw();
+  }
+}
+
+function scheduleRedraw() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(redrawChangedCards, viewSettings.ui.resizeDebounceMs);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', scheduleRedraw);
+  window.addEventListener('orientationchange', scheduleRedraw);
 }
 
 export function banner(text) {
@@ -23,15 +43,23 @@ export function makeCard({ heading, note, controls, draw }) {
   const scroll = el('div', 'chart-scroll');
   scroll.append(chart);
 
+  const entry = {
+    lastWidth: 0,
+    changed: () => Math.abs(scroll.clientWidth - entry.lastWidth) > viewSettings.ui.resizeMinChangePx,
+    redraw,
+  };
+
   function redraw() {
-    const width = scroll.clientWidth || viewSettings.defaultWidth;
-    mountSvg(chart, draw(width));
+    const measured = scroll.clientWidth;
+    entry.lastWidth = measured;
+    mountSvg(chart, draw(measured || viewSettings.defaultWidth));
     sizeSvg(chart.querySelector('svg'), viewSettings.minWidth);
     zoom.refresh();
   }
 
   card.append(el('h2', null, heading), el('p', 'card-sub', note), ...controls(redraw), scroll);
   const zoom = attachZoom(scroll, viewSettings.zoom);
+  liveCards.add(entry);
   return { card, redraw };
 }
 

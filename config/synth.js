@@ -56,8 +56,39 @@ export const synth = {
     sizeRange: [0.3, 0.5],
     poorSleep: 'Poor sleep S-',
   },
+  // Time of day for entries (core/time-entries.js). Day minutes run from dayStartMinutes (04:00) to 1679 (03:59 next
+  // calendar day). Values are sampled from a normal distribution (center, sd) and clamped to that range. Labels without
+  // a profile are uniform from `defaultUniform`. Uses its own PRNG (seed + seedOffset), so the label stream is unchanged.
+  timeOfDay: {
+    mode: 'varied',           // 'varied', or 'single': one entry per day at singleMinutes with all labels
+    seedOffset: 104729,
+    singleMinutes: 720,       // 12:00
+    dayStartMinutes: 240,     // same value as time.dayBoundaryMinutes in config/views.js
+    entryGranularityMinutes: 60,
+    defaultUniform: { from: 420, to: 1380 }, // 07:00 to 23:00
+    profiles: {
+      'Late coffee F-': { center: 900, sd: 120 },  // 15:00
+      'Morning run A+': { center: 420, sd: 45 },   // 07:00
+      'Poor sleep S-': { center: 510, sd: 60 },    // 08:30
+      'Vivid dream D-': { center: 420, sd: 45 },   // 07:00
+      'Alcohol H-': { center: 1290, sd: 90 },      // 21:30
+      'Screen time H-': { center: 1470, sd: 90 },  // 00:30 on the next calendar day
+    },
+  },
+  // Seasonal planted effect: the label's daily probability is multiplied in these months (capped at 1). It does not
+  // change the number of random draws, so the other expectations hold.
+  seasonal: { label: 'Hot bath B+', months: [12, 1, 2], multiplier: 2 },
   expect: {
     labelCount: [20, 24],
+    // Hot bath B+ (base p 0.25): winter p is 0.50, so the winter-to-other rate ratio is about 2. Sampling noise with
+    // about 90 winter days gives roughly +/- 20 percent, so the range is 1.6 to 2.4.
+    seasonalRatio: [1.6, 2.4],
+    // Alcohol H- to Headache B- (E4, window 3 days): after rate about 0.34 (days 1 and 2 at 0.40, day 3 about 0.22),
+    // before rate 0.12, so the difference is about 0.22. Range is wide enough for sampling noise.
+    alcoholHeadacheDiff3d: [0.15, 0.30],
+    // Screen time H-: share of its entries in calendar hours 0 to 3. Normal(1470, 90): P(1440 <= X < 1680) is about 0.620,
+    // plus the clamped tail above 1679 (about 0.010, still hour 0 to 3), so about 0.63. Range is +/- 0.08 around it.
+    screenNightShare: [0.55, 0.70],
     coffeeSleep1d: [1.5, 2.4],  // planted effect 1, 1-day window (derived above: 1.96)
     alcoholHeadache1d: [1.4, 2.3], // planted effect 2, 1-day window (derived above: 1.81)
     minRatio: 1.25,             // planted effect 3 (Deadline to Anxious): mean rate over lags 7 to 14 >= baseline * minRatio (measured 1.46)

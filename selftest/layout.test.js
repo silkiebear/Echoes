@@ -7,6 +7,9 @@ import { generate } from '../core/synth.js';
 import { computeEchoes, buildE1Data, buildE2Data, buildE3Data } from '../core/echo-demo.js';
 import { buildTimeData, buildRollingData, labelIdOf } from '../core/time-demo.js';
 import { textBox, overlaps, insideView } from '../core/textfit.js';
+import { buildHourGrid, buildDial } from '../core/period-demo.js';
+import { buildE4Data } from '../core/event-study-demo.js';
+import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 
 // Text-fit guard over the generated markup. It reads the known format from core/svg.js (svgText, svgDoc) and
 // uses the estimated boxes from core/textfit.js. It catches overflow and overlap, not pixel-level problems.
@@ -24,6 +27,9 @@ const demo = {
 };
 const time = buildTimeData(data);
 const rollingIds = T.rolling.labels.map(idOf);
+// Periodic views also run on single-timestamp data, which triggers the low-diversity pill.
+const single = generate({ ...cfg, timeOfDay: { ...cfg.timeOfDay, mode: 'single' } });
+const dialIds = ['Late coffee F-', 'Morning run A+', 'Screen time H-'].map(idOf);
 
 // Each case is one render: the data plus the options a gallery control would pass.
 function casesFor(view) {
@@ -35,6 +41,16 @@ function casesFor(view) {
     case 'T2': return T.lanes.ranges.map((r) => ({ name: `T2 ${r.id}`, data: time.T2, opts: { range: r.id } }));
     case 'T3': return [{ name: 'T3', data: time.T3, opts: {} }];
     case 'T4': return T.rolling.windows.map((w) => ({ name: `T4 ${w}d`, data: buildRollingData(data, rollingIds, w), opts: {} }));
+    case 'P1': return [[data, 'varied'], [single, 'single']].flatMap(([d, tag]) => [null, idOf('Late coffee F-')].map((id) => ({
+      name: `P1 ${tag} ${id === null ? 'all' : 'coffee'}`, data: buildHourGrid(d, id, 'count', T.weekStart), opts: {},
+    })));
+    case 'P2': return [[data, 'varied'], [single, 'single']].flatMap(([d, tag]) => [
+      { name: `P2 a ${tag}`, data: buildDial(d, [idOf('Late coffee F-')], 24), opts: { variant: 'a' } },
+      { name: `P2 b ${tag}`, data: buildDial(d, dialIds, 24), opts: { variant: 'b' } },
+    ]);
+    case 'E4': return [3, 7].map((w) => ({ name: `E4 ${w}d`, data: buildE4Data(data, idOf('Alcohol H-'), w), opts: {} }));
+    case 'P3': return [{ name: 'P3', data: buildWeekdayProfile(data, idOf('Friends meetup P+'), T.weekStart), opts: {} }];
+    case 'P4': return [{ name: 'P4', data: buildMonthProfile(data, idOf('Hot bath B+')), opts: {} }];
     default: return [];
   }
 }

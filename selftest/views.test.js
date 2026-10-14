@@ -6,6 +6,9 @@ import { viewSettings } from '../config/views.js';
 import { generate } from '../core/synth.js';
 import { computeEchoes, buildE1Data, buildE2Data, buildE3Data } from '../core/echo-demo.js';
 import { buildTimeData } from '../core/time-demo.js';
+import { buildHourGrid, buildDial } from '../core/period-demo.js';
+import { buildE4Data } from '../core/event-study-demo.js';
+import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 
 const data = generate(cfg);
 const echoes = computeEchoes(data, windows, viewSettings.echo);
@@ -15,6 +18,11 @@ const demoData = {
   E2: buildE2Data(data, idOf('Deadline W-'), idOf('Anxious M-'), viewSettings.curve),
   E3: buildE3Data(data, echoes, windows, viewSettings.ranking.maxRows),
   ...buildTimeData(data),
+  P1: buildHourGrid(data, null, 'count', viewSettings.time.weekStart),
+  P2: buildDial(data, [idOf('Late coffee F-')], 24),
+  E4: buildE4Data(data, idOf('Alcohol H-'), 3),
+  P3: buildWeekdayProfile(data, idOf('Friends meetup P+'), viewSettings.time.weekStart),
+  P4: buildMonthProfile(data, idOf('Hot bath B+')),
 };
 const HOSTILE = '<b>&"\'';
 const hostileRows = {
@@ -26,6 +34,11 @@ const hostileRows = {
 
 function viewById(id) {
   return views.find((v) => v.id === id);
+}
+
+// Views without variants (P1) have no variant to pass.
+function variantOf(view) {
+  return view.variants.length ? view.variants[0].id : undefined;
 }
 
 test('every view and variant renders an svg with a viewBox from demo data', () => {
@@ -40,7 +53,7 @@ test('every view and variant renders an svg with a viewBox from demo data', () =
 
 test('rendered markup has no script, external URL, or inline handlers', () => {
   for (const view of views) {
-    const svg = view.render(demoData[view.id], { variant: view.variants[0].id, hideFlagged: false });
+    const svg = view.render(demoData[view.id], { variant: variantOf(view), hideFlagged: false });
     for (const bad of ['<script', 'http', 'onload=', 'onclick=']) {
       assert.ok(!svg.includes(bad), `${view.id} contains ${bad}`);
     }
@@ -49,7 +62,7 @@ test('rendered markup has no script, external URL, or inline handlers', () => {
 
 test('colours are CSS classes, never inline hex', () => {
   for (const view of views) {
-    const svg = view.render(demoData[view.id], { variant: view.variants[0].id, hideFlagged: false });
+    const svg = view.render(demoData[view.id], { variant: variantOf(view), hideFlagged: false });
     assert.ok(!/#[0-9a-f]{3,8}\b/i.test(svg), `${view.id} contains a hex colour`);
   }
 });
@@ -87,7 +100,7 @@ test('E2 subtitle states the demo band', () => {
 
 test('output is deterministic', () => {
   for (const view of views) {
-    const opts = { variant: view.variants[0].id, hideFlagged: false };
+    const opts = { variant: variantOf(view), hideFlagged: false };
     assert.equal(view.render(demoData[view.id], opts), view.render(demoData[view.id], opts), `${view.id} differs between renders`);
   }
 });
