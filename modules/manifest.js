@@ -7,4 +7,8 @@ export const modules = [
   './gallery.js',
   './gallery-time.js',
   './gallery-periodic.js',
+  './data-load.js',
+  './mood-setup.js',
+  './q1-coverage.js',
+  './q2-label-coding.js',
 ];

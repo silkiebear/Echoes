@@ -11,5 +11,6 @@ import p2 from './p2-dial.js';
 import e4 from './e4-before-after.js';
 import p3 from './p3-weekday-profile.js';
 import p4 from './p4-month-profile.js';
+import m2 from './m2-mood-setup.js';
 
-export const views = [e1, e2, e3, t1, t2, t3, t4, p1, p2, e4, p3, p4];
+export const views = [e1, e2, e3, t1, t2, t3, t4, p1, p2, e4, p3, p4, m2];

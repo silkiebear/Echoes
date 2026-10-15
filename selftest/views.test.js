@@ -10,6 +10,15 @@ import { buildHourGrid, buildDial } from '../core/period-demo.js';
 import { buildE4Data } from '../core/event-study-demo.js';
 import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 
+// M2 mood setup: one mood with a long name and one with a stored colour that is not #rrggbb.
+const M2_DEMO = {
+  moods: [
+    { name: 'great', order: 1, color: '#3f9e6b' },
+    { name: 'a long mood name that has to wrap over several lines', order: 2, color: '#c4553f' },
+    { name: 'bad', order: 3, color: 'not a colour' },
+  ],
+};
+
 const data = generate(cfg);
 const echoes = computeEchoes(data, windows, viewSettings.echo);
 const idOf = (text) => data.labels.find((l) => l.text === text).id;
@@ -23,6 +32,7 @@ const demoData = {
   E4: buildE4Data(data, idOf('Alcohol H-'), 3),
   P3: buildWeekdayProfile(data, idOf('Friends meetup P+'), viewSettings.time.weekStart),
   P4: buildMonthProfile(data, idOf('Hot bath B+')),
+  M2: M2_DEMO,
 };
 const HOSTILE = '<b>&"\'';
 const hostileRows = {
@@ -62,6 +72,8 @@ test('rendered markup has no script, external URL, or inline handlers', () => {
 
 test('colours are CSS classes, never inline hex', () => {
   for (const view of views) {
+    // M2 writes the user's own mood colours as fill attributes; only #rrggbb values reach the markup.
+    if (view.id === 'M2') continue;
     const svg = view.render(demoData[view.id], { variant: variantOf(view), hideFlagged: false });
     assert.ok(!/#[0-9a-f]{3,8}\b/i.test(svg), `${view.id} contains a hex colour`);
   }

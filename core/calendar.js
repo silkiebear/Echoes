@@ -31,6 +31,8 @@ export function weekStartOf(iso, weekStart) {
 }
 
 export function dayOf(iso, minutes, boundaryMinutes) {
+  // A missing time must keep the calendar date: null would coerce to 0 and shift it.
+  if (!Number.isFinite(minutes)) return iso;
   if (minutes < boundaryMinutes) {
     return addDays(iso, -1);
   }

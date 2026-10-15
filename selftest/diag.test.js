@@ -188,3 +188,57 @@ test('fileNameFor: local date and time in a fixed pattern', async () => {
   const d = await fresh();
   assert.equal(d.fileNameFor(new Date(2026, 9, 14, 7, 5)), 'echoes-diagnostics-20261014-0705.txt');
 });
+
+test('PARSE STATS shows the set stats, nested keys and arrays, and replaces registered text', async () => {
+  const d = await fresh();
+  d.register('Work Note', 'label');
+  assert.ok(d.build().includes('(none yet)'), 'placeholder before stats are set');
+  d.setParseStats({
+    rowsRead: 3,
+    ok: true,
+    mapped: { date: 'full_date' },
+    labelsPerEntry: { min: 0 },
+    columnNames: ['full_date', 'Work Note'],
+  });
+  const text = d.build();
+  const section = text.slice(text.indexOf('== PARSE STATS'));
+  assert.ok(section.includes('rowsRead: 3'), 'number printed as is');
+  assert.ok(section.includes('ok: true'), 'boolean printed as is');
+  assert.ok(section.includes('mapped.date: full_date'), 'nested key printed');
+  assert.ok(section.includes('labelsPerEntry.min: 0'), 'nested key printed');
+  assert.ok(section.includes('columnNames: full_date, L0001'), 'registered column text replaced');
+  assert.ok(!section.includes('(none yet)'), 'placeholder gone');
+  assert.ok(!text.includes('Work Note'), 'registered text leaked');
+});
+
+// Two-character keys match only as whole words; three or more match as substrings.
+test('two-character mood matches as a whole word only', async () => {
+  const d = await fresh();
+  assert.equal(d.register('ok', 'mood'), 'M0001', 'token for ok');
+  assert.equal(d.safe('token ok.'), 'token M0001.', 'whole word replaced');
+  assert.equal(d.safe('book'), 'book', 'ok inside book is not a word match');
+  assert.ok(!d.safe('token ok.').includes('ok.'), 'original word leaked');
+});
+
+test('three-character key matches as a substring; the rest of the word remains', async () => {
+  const d = await fresh();
+  assert.equal(d.register('Run', 'label'), 'L0001', 'token for Run');
+  assert.equal(d.safe('Running'), 'L0001ning', 'Run removed, ning stays');
+  assert.ok(!d.safe('Running').toLowerCase().includes('run'), 'key leaked');
+});
+
+test('two-character key with a Finnish letter matches the word, not a longer word', async () => {
+  const d = await fresh();
+  assert.equal(d.register('\u00d6l', 'label'), 'L0001', 'token for Ol with umlaut');
+  const out = d.safe('\u00d6l and \u00d6lkki');
+  assert.equal(out, 'L0001 and \u00d6lkki', 'whole word only with a Finnish letter');
+  assert.ok(!out.includes('\u00d6l and'), 'word leaked');
+});
+
+test('two-character key with a regex metacharacter is matched literally', async () => {
+  const d = await fresh();
+  assert.equal(d.register('A+', 'label'), 'L0001', 'token for A+');
+  const out = d.safe('got A+ today');
+  assert.equal(out, 'got L0001 today', 'A+ matched literally');
+  assert.ok(!out.includes('A+'), 'key leaked');
+});

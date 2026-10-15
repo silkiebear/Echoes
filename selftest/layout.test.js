@@ -14,6 +14,16 @@ import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js'
 // Text-fit guard over the generated markup. It reads the known format from core/svg.js (svgText, svgDoc) and
 // uses the estimated boxes from core/textfit.js. It catches overflow and overlap, not pixel-level problems.
 const WIDTHS = [320, 900];
+// M2 mood setup: a long name that wraps, and twelve moods (the most a user is likely to have).
+const M2_LONG = {
+  moods: [
+    { name: 'great', order: 1, color: '#3f9e6b' },
+    { name: 'a long mood name that has to wrap over several lines', order: 2, color: '#c4553f' },
+  ],
+};
+const M2_TWELVE = {
+  moods: Array.from({ length: 12 }, (_, i) => ({ name: `mood number ${i + 1}`, order: i + 1, color: '#3f9e6b' })),
+};
 const T = viewSettings.time;
 const pad = viewSettings.text.outlinePad;
 
@@ -51,6 +61,10 @@ function casesFor(view) {
     case 'E4': return [3, 7].map((w) => ({ name: `E4 ${w}d`, data: buildE4Data(data, idOf('Alcohol H-'), w), opts: {} }));
     case 'P3': return [{ name: 'P3', data: buildWeekdayProfile(data, idOf('Friends meetup P+'), T.weekStart), opts: {} }];
     case 'P4': return [{ name: 'P4', data: buildMonthProfile(data, idOf('Hot bath B+')), opts: {} }];
+    case 'M2': return [
+      { name: 'M2 long name', data: M2_LONG, opts: {} },
+      { name: 'M2 12 moods', data: M2_TWELVE, opts: {} },
+    ];
     default: return [];
   }
 }

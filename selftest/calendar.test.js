@@ -28,6 +28,18 @@ test('day boundary at 240 minutes', () => {
   assert.equal(dayOf('2026-03-01', 0, 240), '2026-02-28', 'dayOf 0/240 on non-leap Mar 1 is Feb 28');
 });
 
+test('dayOf without a usable time keeps the date', () => {
+  assert.equal(dayOf('2026-10-12', null, 240), '2026-10-12', 'dayOf null/240 keeps the date');
+  assert.equal(dayOf('2026-10-12', undefined, 240), '2026-10-12', 'dayOf undefined/240 keeps the date');
+  assert.equal(dayOf('2026-10-12', NaN, 240), '2026-10-12', 'dayOf NaN/240 keeps the date');
+});
+
+test('dayOf boundary 0 never shifts and 240 keeps 240 and 241', () => {
+  assert.equal(dayOf('2026-10-12', 0, 0), '2026-10-12', 'dayOf 0/0 keeps the date');
+  assert.equal(dayOf('2026-10-12', 1439, 0), '2026-10-12', 'dayOf 1439/0 keeps the date');
+  assert.equal(dayOf('2026-10-12', 241, 240), '2026-10-12', 'dayOf 241/240 keeps the date');
+});
+
 test('weekday labels', () => {
   assert.equal(weekdayLabels(1).length, 7, 'weekdayLabels(1) has length 7');
   assert.equal(weekdayLabels(0).length, 7, 'weekdayLabels(0) has length 7');

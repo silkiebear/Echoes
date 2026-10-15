@@ -21,4 +21,13 @@ export const tests = [
   './selftest/period.test.js',
   './selftest/event-study.test.js',
   './selftest/profile.test.js',
+  './selftest/env.test.js',
+  './selftest/csv.test.js',
+  './selftest/aggregate.test.js',
+  './selftest/export-parse.test.js',
+  './selftest/settings.test.js',
+  './selftest/mood.test.js',
+  './selftest/label-code.test.js',
+  './selftest/data-ui.test.js',
+  './selftest/quality.test.js',
 ];

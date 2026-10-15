@@ -1,0 +1,87 @@
+.counts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-2);
+  margin: var(--space-1) 0;
+  align-items: baseline;
+}
+
+.counts dt {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.counts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.m2-row-bg {
+  fill: var(--surface-2);
+}
+
+.m2-swatch {
+  stroke: var(--border);
+  stroke-width: 1px;
+}
+
+button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.data-note {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: var(--space-1) 0;
+}
+
+.field-label {
+  display: block;
+  min-height: var(--touch);
+  margin-top: var(--space-1);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.quality {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--space-1) 0;
+}
+
+.quality th,
+.quality td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.quality thead th {
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.label-list {
+  margin: var(--space-1) 0;
+  padding-left: var(--space-2);
+}
+
+.label-list li {
+  margin-bottom: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+details > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch);
+  cursor: pointer;
+}

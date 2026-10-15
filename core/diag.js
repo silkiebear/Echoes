@@ -8,6 +8,9 @@ import { describeEnvironment } from './env.js';
 const PREFIX_BY_KIND = new Map([['label', 'L'], ['mood', 'M'], ['note', 'N']]);
 const DEFAULT_PREFIX = 'X';
 const MIN_LENGTH = 2;
+// Keys this long or longer match anywhere (leak-safe, may mangle longer words). Shorter keys match only
+// as whole words, so a two-letter mood cannot blank out the middle of unrelated words.
+const SUBSTRING_MIN_LENGTH = 3;
 const TOKEN_DIGITS = 4;
 const REDACTED = '[REDACTED]';
 const UTF8_MAX_BYTES = 4; // reserved so a cut multi-byte character cannot overflow the cap
@@ -24,6 +27,7 @@ let logEntries = [];
 let errorEntries = [];
 let errorTotal = 0;         // every error captured this session, not capped like errorEntries
 let selftestSummary = null;
+let parseStats = null;      // counts, column names and shapes from the last parse; never values
 let capturedTarget = null;
 
 const encoder = new TextEncoder();
@@ -33,11 +37,21 @@ function escapeRegex(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Two patterns: long keys (substring, flags gi) and short keys (whole word, flags giu). The short
+// pattern captures the character before the match instead of using a lookbehind.
 function compile() {
   if (entries.size === 0) return null;
   // Longest first, so "Sleep well" wins over "Sleep" at the same position.
-  const keys = [...entries.keys()].sort((a, b) => b.length - a.length);
-  return new RegExp(keys.map(escapeRegex).join('|'), 'gi');
+  const byLength = (a, b) => b.length - a.length;
+  const keys = [...entries.keys()];
+  const long = keys.filter((k) => k.length >= SUBSTRING_MIN_LENGTH).sort(byLength);
+  const short = keys.filter((k) => k.length < SUBSTRING_MIN_LENGTH).sort(byLength);
+  return {
+    long: long.length ? new RegExp(long.map(escapeRegex).join('|'), 'gi') : null,
+    short: short.length
+      ? new RegExp(`(^|[^\\p{L}\\p{N}])(${short.map(escapeRegex).join('|')})(?![\\p{L}\\p{N}])`, 'giu')
+      : null,
+  };
 }
 
 function trimTo(list, max) {
@@ -61,15 +75,19 @@ export function register(str, kind) {
   return token;
 }
 
+// Unknown case-folding matches are redacted rather than passed through.
+function tokenFor(match) {
+  const entry = entries.get(match.toLowerCase());
+  return entry ? entry.token : REDACTED;
+}
+
 export function safe(value) {
   const text = String(value).normalize('NFC');
   if (entries.size === 0) return text;
   pattern = pattern || compile();
-  return text.replace(pattern, (match) => {
-    const entry = entries.get(match.toLowerCase());
-    // Unknown case-folding matches are redacted rather than passed through.
-    return entry ? entry.token : REDACTED;
-  });
+  const replacedLong = pattern.long ? text.replace(pattern.long, (match) => tokenFor(match)) : text;
+  if (!pattern.short) return replacedLong;
+  return replacedLong.replace(pattern.short, (match, prefix, key) => prefix + tokenFor(key));
 }
 
 export function log(level, msg, section = DEFAULT_SECTION) {
@@ -148,6 +166,10 @@ export function setSelftest(summary) {
   selftestSummary = summary;
 }
 
+export function setParseStats(stats) {
+  parseStats = stats;
+}
+
 export function reset() {
   entries.clear();
   counters.clear();
@@ -156,6 +178,7 @@ export function reset() {
   errorEntries = [];
   errorTotal = 0;
   selftestSummary = null;
+  parseStats = null;
 }
 
 function safeBlock(name, lines) {
@@ -174,6 +197,27 @@ function selftestLines() {
     lines.push(`FAIL ${failure.file} :: ${failure.name}`, `  ${failure.error}`);
   }
   return lines;
+}
+
+// Nested objects print as "key.sub: value"; arrays as one comma-separated line. safeBlock() runs safe() on the text.
+function flattenStats(obj, prefix = '') {
+  const lines = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const name = prefix + key;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      lines.push(...flattenStats(value, `${name}.`));
+    } else if (Array.isArray(value)) {
+      lines.push(`${name}: ${value.join(', ')}`);
+    } else {
+      lines.push(`${name}: ${value}`);
+    }
+  }
+  return lines;
+}
+
+function parseStatLines() {
+  if (!parseStats) return ['(none yet)'];
+  return flattenStats(parseStats);
 }
 
 function errorLines() {
@@ -220,7 +264,7 @@ export function build({ includeData = false } = {}) {
     + safeBlock('SELFTEST', selftestLines())
     + safeBlock('ERRORS', errorLines())
     + safeBlock('LOG', logLines())
-    + safeBlock('PARSE STATS', ['(none yet)']);
+    + safeBlock('PARSE STATS', parseStatLines());
   if (includeData) text += dataBlock();
   return capBytes(text);
 }

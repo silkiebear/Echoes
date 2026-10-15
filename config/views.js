@@ -162,4 +162,14 @@ export const viewSettings = {
       lineWidth: 1.5,        // polyline stroke width, CSS px
     },
   },
+  // M2 mood setup preview (views/m2-mood-setup.js): one row per mood, best first.
+  m2: {
+    rowHeight: 44,            // minimum row height (touch-sized)
+    swatch: 24,               // colour square
+    orderWidth: 28,           // room for the order number
+    pad: 8,                   // outer margin and gap between columns
+    lineHeight: 1.3,          // line height of a wrapped name, in font sizes
+    minWidth: 200,            // narrowest drawing
+    fallbackColor: '#9aa1b0', // used when a stored colour is not a #rrggbb value
+  },
 };

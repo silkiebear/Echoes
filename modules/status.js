@@ -1,3 +1,6 @@
+import { assetStatus } from '../core/env.js';
+import { assets as assetText } from '../config/assets.js';
+
 export default {
   id: 'status',
   title: 'Status',
@@ -16,6 +19,16 @@ export default {
       item.textContent = `${mod.title} (${mod.id}, phase ${mod.phase})`;
       list.append(item);
     }
-    container.append(summary, note, list);
+    const assets = assetStatus();
+    const assetLine = document.createElement('p');
+    assetLine.textContent = `Assets: ${assets.text}`;
+    const lines = [summary, note, assetLine];
+    if (assets.state === 'stale') {
+      const stale = document.createElement('p');
+      stale.className = 'status-line';
+      stale.textContent = assetText.staleSentence;
+      lines.push(stale);
+    }
+    container.append(...lines, list);
   },
 };
