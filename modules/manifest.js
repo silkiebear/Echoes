@@ -11,4 +11,5 @@ export const modules = [
   './mood-setup.js',
   './q1-coverage.js',
   './q2-label-coding.js',
+  './echo-scan.js',
 ];

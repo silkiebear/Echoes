@@ -49,7 +49,7 @@ async function start() {
   const { modules, errors } = await registry.loadModules(manifest, new URL('../modules/', import.meta.url));
   const ctx = { config: app, diag, registry, version, modules };
   await registry.mountAll(document.getElementById('app'), ctx, modules);
-  diag.log('INFO', `started build ${version.build}: ${modules.length} modules, ${errors.length} rejected`);
+  diag.logStatic('INFO', 'started build', { build: version.build, modules: modules.length, rejected: errors.length });
 }
 
 start();

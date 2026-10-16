@@ -3,7 +3,7 @@
 export const viewSettings = {
   minWidth: 280,        // CSS px: charts are never narrower; the card scrolls horizontally instead
   defaultWidth: 360,    // CSS px used when a card has no measured width yet
-  format: { ratioDigits: 2, percentDigits: 0 },
+  format: { ratioDigits: 2, percentDigits: 0, diffDigits: 2 },
   text: {
     fontPx: 12,         // regular chart text (svgText writes this as font-size)
     smallFontPx: 11,    // axis labels, captions, weekday and month names

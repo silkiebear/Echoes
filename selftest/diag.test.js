@@ -242,3 +242,44 @@ test('two-character key with a regex metacharacter is matched literally', async 
   assert.equal(out, 'got L0001 today', 'A+ matched literally');
   assert.ok(!out.includes('A+'), 'key leaked');
 });
+
+// Real labels such as 'date' or 'ice' must not change keys, headings or fixed labels (SPEC 8).
+test('build() keeps keys and headings when real labels match inside them; values are redacted', async () => {
+  const d = await fresh();
+  for (const name of ['date', 'ice', 'online', 'rejected', 'iron']) d.register(name, 'label');
+  d.setParseStats({ devicePixelRatio: 2, online: 3, rejected: { dateEmpty: 1 }, dateMin: 'ice' });
+  const text = d.build();
+  assert.ok(text.includes('== ENVIRONMENT [SAFE] =='), 'heading mangled');
+  const section = text.slice(text.indexOf('== PARSE STATS'));
+  assert.ok(section.includes('devicePixelRatio: 2'), 'key devicePixelRatio mangled');
+  assert.ok(section.includes('online: 3'), 'key online mangled');
+  assert.ok(section.includes('rejected.dateEmpty: 1'), 'nested key mangled');
+  assert.ok(section.includes('dateMin: L0002'), 'parse-stats value not redacted to its token');
+});
+
+test('logStatic keeps its literal message and redacts field values', async () => {
+  const d = await fresh();
+  d.register('Secret Name', 'label');
+  d.register('Activity', 'label');
+  d.logStatic('INFO', 'Activity scan done', { label: 'Secret Name', cells: 12 });
+  const text = d.build();
+  assert.ok(text.includes('Activity scan done label=L0001 cells=12'), 'message or fields wrong');
+  assert.ok(!text.toLowerCase().includes('secret name'), 'field value leaked');
+});
+
+// build() starts with a time line, so the comparison starts at the first section heading.
+test('snapshot, register, setParseStats and restore return build() to the state before the snapshot', async () => {
+  const body = (text) => text.slice(text.indexOf('== ENVIRONMENT'));
+  const d = await fresh();
+  d.register('Work', 'label');
+  d.setParseStats({ rowsRead: 3, ratio: Infinity });
+  d.logStatic('INFO', 'before', { n: 1 });
+  const before = body(d.build());
+  const snap = d.snapshot();
+  d.register('Other', 'label');
+  d.setParseStats({ rowsRead: 9 });
+  d.logStatic('WARN', 'changed', { n: 2 });
+  d.setSelftest({ ran: 'x', passed: 1, failed: 0, skipped: 0, failing: [] });
+  d.restore(snap);
+  assert.equal(body(d.build()), before, 'restore did not return the earlier state');
+});

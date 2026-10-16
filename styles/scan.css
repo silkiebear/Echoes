@@ -1,0 +1,76 @@
+/* Echo scan card styles. Only tokens.css / views.css variables are used. Dark default, light via data-theme.
+   Flagged results carry a non-color cue (border + text), never colour alone. */
+.scan-box {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  min-width: 0;
+}
+
+.scan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+}
+
+/* Touch targets: controls inside the row meet the 44px minimum. */
+.scan-row button,
+.scan-row select {
+  min-height: var(--touch);
+}
+
+.scan-progress {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.scan-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.scan-table {
+  font-size: var(--scan-table-font);
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.scan-table th,
+.scan-table td {
+  padding: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.scan-table thead th {
+  color: var(--text-muted);
+}
+
+.scan-pill {
+  display: inline-block;
+  border: 1px solid var(--text);
+  border-radius: 12px;
+  padding: 2px var(--space-1);
+  margin: 0 var(--space-1);
+  white-space: nowrap;
+}
+
+.scan-note {
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.scan-notice {
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
+  margin: var(--space-1) 0;
+}

@@ -10,6 +10,8 @@
   --accent: #5b9bd5;
   --diverge-neg: #3a7bd5;
   --diverge-pos: #e8862e;
+  /* Scan table font size, kept small so the wide table stays legible at 320px inside its own scroll. */
+  --scan-table-font: 13px;
   color-scheme: dark;
 
   --radius: 12px;
@@ -25,7 +27,7 @@
   --seq-3: #3f7fc0;
   --seq-4: #74a9e0;
   --seq-5: #bcd9f5;
-  --build: "0.4.0";
+  --build: "0.5.0";
 }
 
 :root[data-theme="light"] {

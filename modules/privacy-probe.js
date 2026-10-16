@@ -31,7 +31,7 @@ export default {
       const result = await probeNetworkBlocked();
       const detail = result.directive ? ` (directive: ${result.directive})` : '';
       networkStatus.textContent = `Blocked: ${result.blocked}${detail}`;
-      ctx.diag.log('INFO', `network probe blocked=${result.blocked}`);
+      ctx.diag.logStatic('INFO', 'network probe', { blocked: result.blocked });
     });
 
     fileInput.addEventListener('change', async () => {
@@ -41,7 +41,7 @@ export default {
       try {
         const stats = await readFileStats(file);
         fileStatus.textContent = `Bytes: ${stats.bytes}. Line breaks: ${stats.lineBreaks}. Nothing was uploaded or stored.`;
-        ctx.diag.log('INFO', `file read bytes=${stats.bytes} lineBreaks=${stats.lineBreaks}`);
+        ctx.diag.logStatic('INFO', 'file read', { bytes: stats.bytes, lineBreaks: stats.lineBreaks });
       } catch (err) {
         const name = err ? err.name : 'unknown';
         fileStatus.textContent = `Read failed: ${name}`;

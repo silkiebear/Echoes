@@ -88,7 +88,7 @@ export default {
       try {
         parsed = JSON.parse(text);
       } catch {
-        diag.log('ERROR', 'settings file: not valid JSON');
+        diag.logStatic('ERROR', 'settings file: not valid JSON');
         return 'The settings file is not valid JSON.';
       }
       const { settings, errors } = validateSettings(parsed);
@@ -98,14 +98,14 @@ export default {
       }
       saveCached(settings);
       store.set({ settings });
-      diag.log('INFO', `settings loaded: ${errors.length} validation notes`);
+      diag.logStatic('INFO', 'settings loaded', { notes: errors.length });
       return errors.length ? `Settings loaded with ${errors.length} notes (see diagnostics).` : 'Settings loaded.';
     }
 
     function loadExport(text) {
       const { data, stats } = parseExport(text, parser);
       diag.setParseStats(stats);
-      diag.log('INFO', `export parsed: rows=${stats.rowsRead} parsed=${stats.rowsParsed} ms=${stats.parseMs}`);
+      diag.logStatic('INFO', 'export parsed', { rows: stats.rowsRead, parsed: stats.rowsParsed, ms: stats.parseMs });
       store.set({ data, parseStats: stats });
       if (!data) return 'No date column found. The column names are in the diagnostics.';
       return `Loaded ${data.entries.length} entries.`;
@@ -120,14 +120,14 @@ export default {
       const messages = [];
       for (const file of files) {
         if (file.size > parser.maxFileBytes) {
-          diag.log('WARN', `file rejected: ${file.size} bytes is over the limit`);
+          diag.logStatic('WARN', 'file rejected: over the size limit', { bytes: file.size });
           messages.push('A file was rejected: it is larger than the size limit.');
           continue;
         }
         try {
           messages.push(loadText(await file.text()));
         } catch {
-          diag.log('ERROR', 'file could not be read');
+          diag.logStatic('ERROR', 'file could not be read');
           messages.push('A file could not be read.');
         }
       }

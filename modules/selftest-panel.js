@@ -23,33 +23,36 @@ export default {
       button.disabled = true;
       status.textContent = 'Running...';
       list.replaceChildren();
+      const snapshot = ctx.diag.snapshot();
+      let result;
       try {
-        const result = await runAll(tests, APP_ROOT);
-        const failing = result.results.filter((r) => r.status === 'fail');
-        const skipped = result.results.filter((r) => r.status === 'skip');
-        const verdict = result.failed === 0 ? 'ALL PASSED' : 'FAILURES';
-        status.textContent = `${verdict}: passed ${result.passed}, failed ${result.failed}, skipped ${result.skipped}`;
-        for (const r of failing) {
-          const item = document.createElement('li');
-          item.textContent = `FAIL ${r.file} :: ${r.name}: ${r.error}`;
-          list.append(item);
-        }
-        for (const r of skipped) {
-          const item = document.createElement('li');
-          item.textContent = `SKIP ${r.name} (${r.reason})`;
-          list.append(item);
-        }
-        ctx.diag.setSelftest({
-          ran: new Date().toISOString(),
-          passed: result.passed,
-          failed: result.failed,
-          skipped: result.skipped,
-          failing: failing.map((r) => ({ file: r.file, name: r.name, error: r.error })),
-        });
-        ctx.diag.log('INFO', `self-test passed=${result.passed} failed=${result.failed} skipped=${result.skipped}`);
+        result = await runAll(tests, APP_ROOT);
       } finally {
+        ctx.diag.restore(snapshot);
         button.disabled = false;
       }
+      const failing = result.results.filter((r) => r.status === 'fail');
+      const skipped = result.results.filter((r) => r.status === 'skip');
+      const verdict = result.failed === 0 ? 'ALL PASSED' : 'FAILURES';
+      status.textContent = `${verdict}: passed ${result.passed}, failed ${result.failed}, skipped ${result.skipped}`;
+      for (const r of failing) {
+        const item = document.createElement('li');
+        item.textContent = `FAIL ${r.file} :: ${r.name}: ${r.error}`;
+        list.append(item);
+      }
+      for (const r of skipped) {
+        const item = document.createElement('li');
+        item.textContent = `SKIP ${r.name} (${r.reason})`;
+        list.append(item);
+      }
+      ctx.diag.setSelftest({
+        ran: new Date().toISOString(),
+        passed: result.passed,
+        failed: result.failed,
+        skipped: result.skipped,
+        failing: failing.map((r) => ({ file: r.file, name: r.name, error: r.error })),
+      });
+      ctx.diag.logStatic('INFO', 'self-test finished', { passed: result.passed, failed: result.failed, skipped: result.skipped });
     });
   },
 };

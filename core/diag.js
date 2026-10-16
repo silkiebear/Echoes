@@ -4,6 +4,7 @@
 import { app } from '../config/app.js';
 import { version } from '../config/version.js';
 import { describeEnvironment } from './env.js';
+import { block, copy, flattenStats } from './diag-format.js';
 
 const PREFIX_BY_KIND = new Map([['label', 'L'], ['mood', 'M'], ['note', 'N']]);
 const DEFAULT_PREFIX = 'X';
@@ -90,14 +91,19 @@ export function safe(value) {
   return replacedLong.replace(pattern.short, (match, prefix, key) => prefix + tokenFor(key));
 }
 
-export function log(level, msg, section = DEFAULT_SECTION) {
-  logEntries.push({
-    time: new Date().toISOString(),
-    level: safe(level),
-    section: safe(section),
-    msg: safe(msg),
-  });
+function pushLog(entry) {
+  logEntries.push({ time: new Date().toISOString(), ...entry });
   trimTo(logEntries, app.diag.maxLogLines);
+}
+
+export function log(level, msg, section = DEFAULT_SECTION) {
+  pushLog({ level: safe(level), section: safe(section), msg: safe(msg), fields: [], literal: false });
+}
+
+// The message is a literal (lint L11), so it is not redacted; field values always are.
+export function logStatic(level, message, fields = null) {
+  const pairs = Object.entries(fields || {}).map(([key, value]) => [key, safe(value)]);
+  pushLog({ level: safe(level), section: DEFAULT_SECTION, msg: message, fields: pairs, literal: true });
 }
 
 function describeValue(value) {
@@ -156,10 +162,10 @@ function pad2(n) {
   return String(n).padStart(TWO_DIGITS, '0');
 }
 
-// Local time, so the name matches the time shown on the device when the file was saved.
+// Local time, so the name matches the time shown on the device when the file was saved (SPEC 8).
 export function fileNameFor(date) {
-  const day = `${date.getFullYear()}${pad2(date.getMonth() + MONTH_OFFSET)}${pad2(date.getDate())}`;
-  return `${FILE_PREFIX}-${day}-${pad2(date.getHours())}${pad2(date.getMinutes())}.txt`;
+  const day = `${date.getFullYear()}${pad2(date.getMonth() + MONTH_OFFSET)}${pad2(date.getDate())}`; // lint-allow: local-time file name (SPEC 8)
+  return `${FILE_PREFIX}-${day}-${pad2(date.getHours())}${pad2(date.getMinutes())}.txt`; // lint-allow: local-time file name (SPEC 8)
 }
 
 export function setSelftest(summary) {
@@ -181,58 +187,71 @@ export function reset() {
   parseStats = null;
 }
 
-function safeBlock(name, lines) {
-  return `== ${name} [SAFE] ==\n${safe(lines.join('\n'))}\n\n`;
+// Opaque state for restore(); the self-test uses it so running tests never changes live diagnostics.
+export function snapshot() {
+  return {
+    entries: [...entries].map(([key, entry]) => [key, { ...entry }]),
+    counters: [...counters],
+    logEntries: copy(logEntries),
+    errorEntries: copy(errorEntries),
+    errorTotal,
+    selftestSummary: copy(selftestSummary),
+    parseStats: copy(parseStats),
+  };
+}
+
+export function restore(snap) {
+  entries.clear();
+  for (const [key, entry] of snap.entries) entries.set(key, { ...entry });
+  counters.clear();
+  for (const [prefix, n] of snap.counters) counters.set(prefix, n);
+  pattern = null;
+  logEntries = copy(snap.logEntries);
+  errorEntries = copy(snap.errorEntries);
+  errorTotal = snap.errorTotal;
+  selftestSummary = copy(snap.selftestSummary);
+  parseStats = copy(snap.parseStats);
 }
 
 function environmentLines() {
-  return Object.entries(describeEnvironment()).map(([key, value]) => `${key}: ${value}`);
+  return Object.entries(describeEnvironment()).map(([key, value]) => `${key}: ${safe(value)}`);
 }
 
 function selftestLines() {
   if (!selftestSummary) return ['not run in this session'];
   const s = selftestSummary;
-  const lines = [`ran: ${s.ran}`, `passed ${s.passed}, failed ${s.failed}, skipped ${s.skipped}`];
+  const lines = [`ran: ${safe(s.ran)}`, `passed ${safe(s.passed)}, failed ${safe(s.failed)}, skipped ${safe(s.skipped)}`];
   for (const failure of s.failing) {
-    lines.push(`FAIL ${failure.file} :: ${failure.name}`, `  ${failure.error}`);
-  }
-  return lines;
-}
-
-// Nested objects print as "key.sub: value"; arrays as one comma-separated line. safeBlock() runs safe() on the text.
-function flattenStats(obj, prefix = '') {
-  const lines = [];
-  for (const [key, value] of Object.entries(obj)) {
-    const name = prefix + key;
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      lines.push(...flattenStats(value, `${name}.`));
-    } else if (Array.isArray(value)) {
-      lines.push(`${name}: ${value.join(', ')}`);
-    } else {
-      lines.push(`${name}: ${value}`);
-    }
+    lines.push(`FAIL ${safe(failure.file)} :: ${safe(failure.name)}`, `  ${safe(failure.error)}`);
   }
   return lines;
 }
 
 function parseStatLines() {
   if (!parseStats) return ['(none yet)'];
-  return flattenStats(parseStats);
+  return flattenStats(parseStats, safe);
 }
 
 function errorLines() {
   if (errorEntries.length === 0) return ['no errors captured'];
   const lines = [];
   for (const e of errorEntries) {
-    lines.push(`[${e.time}] ${e.kind}: ${e.message}${e.where ? ` at ${e.where}` : ''}`);
-    if (e.stack) lines.push(...e.stack.split('\n').map((line) => `    ${line}`));
+    const where = e.where ? ` at ${safe(e.where)}` : '';
+    lines.push(`[${e.time}] ${e.kind}: ${safe(e.message)}${where}`);
+    if (e.stack) lines.push(...safe(e.stack).split('\n').map((line) => `    ${line}`));
   }
   return lines;
 }
 
+// Literal messages (logStatic) are printed as they are; other messages are redacted at print time too,
+// so a label registered after the entry was logged is still hidden.
 function logLines() {
   if (logEntries.length === 0) return ['no log entries'];
-  return logEntries.map((e) => `[${e.time}] ${e.level} [${e.section}] ${e.msg}`);
+  return logEntries.map((e) => {
+    const text = e.literal ? e.msg : safe(e.msg);
+    const pairs = e.fields.map(([key, value]) => ` ${key}=${safe(value)}`).join('');
+    return `[${e.time}] ${e.level} [${e.section}] ${text}${pairs}`;
+  });
 }
 
 function dataBlock() {
@@ -260,11 +279,11 @@ export function build({ includeData = false } = {}) {
     '',
   ].join('\n');
   let text = header
-    + safeBlock('ENVIRONMENT', environmentLines())
-    + safeBlock('SELFTEST', selftestLines())
-    + safeBlock('ERRORS', errorLines())
-    + safeBlock('LOG', logLines())
-    + safeBlock('PARSE STATS', parseStatLines());
+    + block('ENVIRONMENT', environmentLines())
+    + block('SELFTEST', selftestLines())
+    + block('ERRORS', errorLines())
+    + block('LOG', logLines())
+    + block('PARSE STATS', parseStatLines());
   if (includeData) text += dataBlock();
   return capBytes(text);
 }
