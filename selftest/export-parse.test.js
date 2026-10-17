@@ -4,6 +4,7 @@ import * as diag from '../core/diag.js';
 import { generate } from '../core/synth.js';
 import { exportText } from '../core/synth-export.js';
 import { parseExport } from '../core/export-parse.js';
+import { dotTimeCells } from '../core/time-dot.js';
 import { weekdayOf } from '../core/calendar.js';
 import { parser } from '../config/parser.js';
 import { synth } from '../config/synth.js';
@@ -158,4 +159,52 @@ test('a 1.1 MB export parses within the Node time budget', () => {
   const elapsed = performance.now() - started;
   assert.ok(data !== null, 'data returned');
   assert.ok(elapsed < parser.maxParseMsNode, `took ${Math.round(elapsed)} ms`);
+});
+
+const minutesByDate = (data) => data.entries.map((e) => `${e.date} ${e.minutes}`).sort();
+
+test('dotted times: 8.30 and 12.05 are minutes; 9.75 is rejected and its fraction is reported', () => {
+  const text = 'full_date,time\n2026-10-14,8.30\n2026-10-15,12.05\n2026-10-16,9.75\n';
+  const { data, stats } = parseExport(text, parser);
+  assert.ok(data !== null, 'data returned');
+  const minutesOn = (date) => data.entries.find((e) => e.date === date).minutes;
+  assert.equal(minutesOn('2026-10-14'), 510, '8.30 is 510 minutes');
+  assert.equal(minutesOn('2026-10-15'), 725, '12.05 is 725 minutes');
+  assert.equal(minutesOn('2026-10-16'), null, '9.75 is rejected');
+  assert.equal(stats.timeDotted, 2, 'two dotted times read');
+  assert.equal(stats.timeFractionMax, 75, 'largest two-digit part after a dot');
+  assert.ok(stats.badShapes.includes('time 9.99'), 'rejected dotted time reported as a shape');
+});
+
+test('colon times are unchanged and never counted as dotted', () => {
+  const { data, stats } = parseExport('full_date,time\n2026-10-14,07:30\n2026-10-15,23:59\n', parser);
+  assert.ok(data !== null, 'data returned');
+  assert.deepEqual(minutesByDate(data), ['2026-10-14 450', '2026-10-15 1439'], 'colon minutes');
+  assert.equal(stats.timeDotted, 0, 'no dotted time');
+  assert.equal(stats.timeFractionMax, 0, 'no fraction');
+});
+
+test('a dotted export parses to the same entries and minutes as the colon form', () => {
+  const colon = exportText(synth, {});
+  const dotted = dotTimeCells(colon, { delimiter: ',' });
+  assert.ok(dotted !== colon, 'time cells were rewritten');
+  const a = parseExport(colon, parser);
+  const b = parseExport(dotted, parser);
+  assert.ok(a.data !== null && b.data !== null, 'both parse');
+  assert.deepEqual(minutesByDate(b.data), minutesByDate(a.data), 'same minutes for every entry');
+  assert.equal(b.stats.timeDotted, b.data.entries.filter((e) => e.minutes !== null).length, 'every timed entry counted as dotted');
+  assert.equal(b.stats.errors.length, 0, 'no parse errors');
+  assert.equal(b.stats.badShapes.length, 0, 'no rejected shapes');
+});
+
+test('a quoted field with the delimiter stays one field; __proto__ and constructor headers change no object', () => {
+  const text = 'full_date,time,mood,activities,__proto__,constructor\n2026-10-14,07:30,good,"Walk, fast|Coffee F-",x,y\n';
+  const { data, stats } = parseExport(text, parser);
+  assert.ok(data !== null, 'data returned');
+  assert.deepEqual(data.labels.map((l) => l.text).sort(), ['Coffee F-', 'Walk, fast'], 'quoted comma kept inside one label');
+  assert.equal(data.entries.length, 1, 'one entry');
+  assert.ok(stats.columnNames.includes('__proto__') && stats.columnNames.includes('constructor'), 'header names read as names');
+  assert.equal(Object.getPrototypeOf(stats.mapped), Object.prototype, 'mapped keeps its prototype');
+  assert.equal(stats.mapped.date, 'full_date', 'mapped date unchanged');
+  assert.equal(JSON.parse(JSON.stringify(stats)).columnNames.length, stats.columnNames.length, 'stats round trip unchanged');
 });

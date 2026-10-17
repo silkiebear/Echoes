@@ -13,7 +13,9 @@ const SECONDS_PER_MINUTE = 60;
 const DATE_DIGITS = 2;
 const PAIR = 2;
 const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const TIME_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+// Groups: hours, separator (a parser.timeSeparators entry), minutes, optional seconds.
+const TIME_PATTERN = /^(\d{1,2})([:.])(\d{2})(?::(\d{2}))?$/;
+const NO_TIME = { minutes: null, dotted: false, fraction: null };
 // Day-first formats (groups: day, month, year). Names come from parser.extraDateFormats.
 const DATE_FORMATS = {
   'DMY-dot': /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/,
@@ -82,15 +84,21 @@ function parseDate(text, formatNames) {
   return { reason: 'dateUnparsed' };
 }
 
-// Minutes after midnight, or null when the text is not H:MM, HH:MM or HH:MM:SS within range.
-function parseTime(text) {
+// { minutes, dotted, fraction }: minutes after midnight, or null when rejected. dotted marks an H.MM form. fraction
+// is the two digits after a dot whatever their value, so a decimal-hours export shows up in the stats.
+function parseTime(text, cfg) {
   const m = TIME_PATTERN.exec(text);
-  if (!m) return null;
+  if (!m) return NO_TIME;
+  const dotted = m[2] === '.';
   const hours = Number(m[1]);
-  const minutes = Number(m[2]);
-  const seconds = m[3] === undefined ? 0 : Number(m[3]);
-  if (hours >= HOURS_PER_DAY || minutes >= MINUTES_PER_HOUR || seconds >= SECONDS_PER_MINUTE) return null;
-  return hours * MINUTES_PER_HOUR + minutes;
+  const minutes = Number(m[3]);
+  const seconds = m[4] === undefined ? 0 : Number(m[4]);
+  const valid = cfg.timeSeparators.includes(m[2])
+    && !(dotted && m[4] !== undefined)
+    && hours < HOURS_PER_DAY
+    && minutes <= cfg.maxMinute
+    && seconds < SECONDS_PER_MINUTE;
+  return { minutes: valid ? hours * MINUTES_PER_HOUR + minutes : null, dotted, fraction: dotted ? minutes : null };
 }
 
 // Records the shape of a failure once per role and shape, up to parser.maxBadShapes entries.
@@ -134,8 +142,11 @@ function readEntries(rows, map, cfg, stats) {
       continue;
     }
     const timeText = cellOf(row, map.time).trim();
-    const minutes = timeText === '' ? null : parseTime(timeText);
+    const time = timeText === '' ? NO_TIME : parseTime(timeText, cfg);
+    const minutes = time.minutes;
     if (timeText !== '' && minutes === null) noteShape(stats, cfg, 'time', timeText);
+    if (time.dotted && minutes !== null) stats.timeDotted += 1;
+    if (time.fraction !== null) stats.timeFractionMax = Math.max(stats.timeFractionMax, time.fraction);
     const moodText = cellOf(row, map.mood).trim();
     const moods = moodText === '' ? [] : [idFor(moodText, moodIds, moodNames, 'mood')];
     const labels = [];
@@ -220,6 +231,8 @@ export function parseExport(text, cfg) {
     distinctMoods: 0,
     labelsPerEntry: { min: 0, median: 0, max: 0 },
     entriesWithoutTime: 0,
+    timeDotted: 0,
+    timeFractionMax: 0,
     entriesWithNote: 0,
     badShapes: [],
     errors: [],

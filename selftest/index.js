@@ -25,6 +25,7 @@ export const tests = [
   './selftest/csv.test.js',
   './selftest/aggregate.test.js',
   './selftest/export-parse.test.js',
+  './selftest/parse-stats.test.js',
   './selftest/settings.test.js',
   './selftest/mood.test.js',
   './selftest/label-code.test.js',

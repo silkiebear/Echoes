@@ -87,16 +87,33 @@ export const stats = {
     // Card sort control (M4). Client-side only: engine order is never changed and no row is hidden.
     sortModes: { q: 'By q (engine order)', placebo: 'Placebo-evaluated first' },
     labels: { source: 'Data source', mode: 'Scan mode', sort: 'Sort rows' },
-    summary: { cells: 'Cells tested', discoveries: 'Discoveries', longRuns: 'with long-run labels', ms: 'ms', runner: 'runner' },
+    summary: {
+      cells: 'Cells tested',
+      discoveries: 'Discoveries',
+      longRuns: 'with long-run labels',
+      withoutLongRuns: 'without long-run labels',
+      ms: 'ms',
+      runner: 'runner',
+    },
     error: 'Scan failed.',
     longRunPill: 'long-run labels',
     longRunNote: 'Discoveries with long-run labels are not valid evidence: their p-values assume independent days.',
+    // Item layout: head "#rank exposure → outcome · window"; metrics line; pill line.
+    rankPrefix: '#',
+    arrow: ' → ',
+    sep: ' · ',
+    none: '—',
+    na: 'n/a',
+    metricNames: { rr: 'rate ratio', diff: 'difference', n: 'n', q: 'q', placebo: 'placebo p' },
+    // Help under the sort control. Both orders keep every row; the order can look the same when the top rows have placebo p values.
+    sortHelp: 'Placebo-evaluated first puts rows that had a shift placebo before the rest; both orders keep every row.',
     // Digits for p and q. Values below pSciBelow print in scientific notation, so 5e-44 is not shown as 0.
     pDigits: 3,
     pSciBelow: 0.001,
     // Choice: rows per page in the card. Phone fit is UNVERIFIED until the user test.
     pageRows: 20,
-    headings: ['rank', 'exposure', 'outcome', 'window', 'rate ratio', 'difference', 'n', 'q', 'placebo p', 'flags'],
+    // Test limit: an item head wraps to at most this many lines at 320 px.
+    maxHeadLines: 6,
     // One entry per flag id in config\flags.js, in plain words for the card.
     pillNames: {
       lowSample: 'few exposed days',

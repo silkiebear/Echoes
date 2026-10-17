@@ -2,9 +2,10 @@
 // replaced by stable tokens in every [SAFE] output, so a shared file cannot leak
 // them by accident. Best effort, not a guarantee.
 import { app } from '../config/app.js';
+import { parser } from '../config/parser.js';
 import { version } from '../config/version.js';
 import { describeEnvironment } from './env.js';
-import { block, copy, flattenStats } from './diag-format.js';
+import { block, copy, flattenStats, parseStatValue } from './diag-format.js';
 
 const PREFIX_BY_KIND = new Map([['label', 'L'], ['mood', 'M'], ['note', 'N']]);
 const DEFAULT_PREFIX = 'X';
@@ -229,7 +230,7 @@ function selftestLines() {
 
 function parseStatLines() {
   if (!parseStats) return ['(none yet)'];
-  return flattenStats(parseStats, safe);
+  return flattenStats(parseStats, (value, name) => parseStatValue(value, name, safe, parser.maxShapeChars));
 }
 
 function errorLines() {

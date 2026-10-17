@@ -15,6 +15,11 @@ export const parser = {
   // Tried after ISO YYYY-MM-DD, in this order. Both are day-first.
   extraDateFormats: ['DMY-dot', 'DMY-slash'],
   activitySeparator: '|',
+  // Time cells: H:MM and HH:MM (and HH:MM:SS) as before. The dot form H.MM / HH.MM is read as minutes only when the two
+  // digits after the dot are at most maxMinute; otherwise it stays a rejected shape. A decimal-hours export is shown in
+  // parse stats (timeFractionMax) for the user to decide; nothing is converted silently.
+  timeSeparators: [':', '.'],
+  maxMinute: 59,
   maxFileBytes: 52428800, // 50 MB; checked before a file is read
   maxBadShapes: 3,        // distinct failure shapes reported in the parse stats
   maxShapeChars: 24,      // longer shapes are cut so that a shape never carries much text

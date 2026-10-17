@@ -14,7 +14,17 @@ export function copy(value) {
   return value;
 }
 
-// Nested objects print as "key.sub: value"; arrays as one comma-separated line. redact is diag.js safe().
+// Plain names in columnNames and mapped.* are structure (SPEC 8): shown as they are, even when a real label has the same
+// text. The rule matches export-parse.js PLAIN_NAME. Everything else goes through redact.
+const PLAIN_NAME = /^[a-z0-9_]+$/;
+const STRUCTURE_KEYS = /^(columnNames|mapped\.)/;
+export function parseStatValue(value, name, redact, maxChars) {
+  const plain = typeof value === 'string' && STRUCTURE_KEYS.test(name) && PLAIN_NAME.test(value) && value.length <= maxChars;
+  return plain ? value : redact(value);
+}
+
+// Nested objects print as "key.sub: value"; arrays as one comma-separated line. redact(value, name) is called with the
+// full key path, so the caller can tell structure (column names) from values.
 export function flattenStats(obj, redact, prefix = '') {
   const lines = [];
   for (const [key, value] of Object.entries(obj)) {
@@ -22,9 +32,9 @@ export function flattenStats(obj, redact, prefix = '') {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       lines.push(...flattenStats(value, redact, `${name}.`));
     } else if (Array.isArray(value)) {
-      lines.push(`${name}: ${value.map((item) => redact(item)).join(', ')}`);
+      lines.push(`${name}: ${value.map((item) => redact(item, name)).join(', ')}`);
     } else {
-      lines.push(`${name}: ${redact(value)}`);
+      lines.push(`${name}: ${redact(value, name)}`);
     }
   }
   return lines;

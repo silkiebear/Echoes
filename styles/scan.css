@@ -17,10 +17,17 @@
   margin: 0 0 var(--space-2);
 }
 
-/* Touch targets: controls inside the row meet the 44px minimum. */
+/* Touch targets: height is set with min-height. The phone self-test measured a 29 px select with min-height alone
+   (cause UNVERIFIED); an explicit height is the change, and the iOS result is UNVERIFIED until the user runs it. */
 .scan-row button,
 .scan-row select {
+  box-sizing: border-box;
+  height: var(--touch);
   min-height: var(--touch);
+}
+
+.scan-row select {
+  padding: 0 var(--space-1);
 }
 
 .scan-progress {
@@ -28,37 +35,62 @@
   margin: 0 0 var(--space-2);
 }
 
-.scan-scroll {
-  overflow-x: auto;
-  max-width: 100%;
-}
-
-.scan-table {
-  font-size: var(--scan-table-font);
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.scan-table th,
-.scan-table td {
-  padding: var(--space-1);
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-
-.scan-table thead th {
+.scan-help {
   color: var(--text-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.scan-list {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.scan-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
+  min-width: 0;
+}
+
+/* Dashed border: rows with long-run labels. Non-colour cue next to the text pill. */
+.scan-item-long {
+  border-style: dashed;
+}
+
+.scan-item-head,
+.scan-item-metrics {
+  line-height: var(--scan-line);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.scan-item-head {
+  margin: 0;
+  color: var(--text);
+}
+
+.scan-item-metrics {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+}
+
+.scan-item-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  min-width: 0;
 }
 
 .scan-pill {
   display: inline-block;
+  max-width: 100%;
   border: 1px solid var(--text);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 2px var(--space-1);
-  margin: 0 var(--space-1);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .scan-note {
