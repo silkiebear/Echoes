@@ -1,0 +1,88 @@
+// Self-test groups for the Tools panel (phase 4a, U9). Every file in selftest\index.js is in exactly one group
+// (selftest-groups.test.js checks this). A file that takes more than 20 percent of the total time has its own group
+// (measured in Chromium, phase 4a: stats-planted.test.js took 57 percent). Paths are relative to app\.
+export const groups = [
+  { id: 'stats-planted', title: 'Stats: planted', files: ['./selftest/stats-planted.test.js'] },
+  {
+    id: 'stats',
+    title: 'Statistics',
+    files: [
+      './selftest/stats-engine.test.js',
+      './selftest/stats-autocorr.test.js',
+      './selftest/stats-client.test.js',
+      './selftest/stats-exact.test.js',
+      './selftest/stats-fdr.test.js',
+      './selftest/stats-rate.test.js',
+      './selftest/stats-bh.test.js',
+      './selftest/stats-flags.test.js',
+      './selftest/stats-placebo.test.js',
+      './selftest/stats-toy.test.js',
+    ],
+  },
+  {
+    id: 'ui',
+    title: 'UI and navigation',
+    files: [
+      './selftest/scan-ui.test.js',
+      './selftest/tabs.test.js',
+      './selftest/tabs-ui.test.js',
+      './selftest/scroll-anchor.test.js',
+      './selftest/selftest-groups.test.js',
+    ],
+  },
+  {
+    id: 'data',
+    title: 'Data and diagnostics',
+    files: [
+      './selftest/harness.test.js',
+      './selftest/diag.test.js',
+      './selftest/diag-env.test.js',
+      './selftest/export-parse.test.js',
+      './selftest/parse-stats.test.js',
+      './selftest/csv.test.js',
+      './selftest/aggregate.test.js',
+      './selftest/settings.test.js',
+      './selftest/mood.test.js',
+      './selftest/label-code.test.js',
+      './selftest/quality.test.js',
+      './selftest/data-ui.test.js',
+      './selftest/env.test.js',
+    ],
+  },
+  {
+    id: 'views',
+    title: 'Views and time',
+    files: [
+      './selftest/registry.test.js',
+      './selftest/csp.test.js',
+      './selftest/network.test.js',
+      './selftest/svg.test.js',
+      './selftest/synth.test.js',
+      './selftest/synth-time.test.js',
+      './selftest/synth-wide.test.js',
+      './selftest/echo-demo.test.js',
+      './selftest/views.test.js',
+      './selftest/layout.test.js',
+      './selftest/zoom.test.js',
+      './selftest/time.test.js',
+      './selftest/time-diversity.test.js',
+      './selftest/t1-week.test.js',
+      './selftest/calendar.test.js',
+      './selftest/period.test.js',
+      './selftest/event-study.test.js',
+      './selftest/profile.test.js',
+      './selftest/theme.test.js',
+      './selftest/computed-style.test.js',
+    ],
+  },
+];
+
+export const groupText = {
+  runAll: 'Run all',
+  files: 'files',
+  running: 'running',
+  idle: 'Press a button to run the self-test.',
+  allPassed: 'ALL PASSED',
+  failures: 'FAILURES',
+  interrupted: 'Run interrupted: the screen locked or the tab was hidden. Press the button again.',
+};

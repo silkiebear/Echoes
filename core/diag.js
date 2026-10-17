@@ -214,14 +214,18 @@ export function restore(snap) {
   parseStats = copy(snap.parseStats);
 }
 
+// Values come from the browser, not from the export (SPEC 8), so they are printed as they are. Redacting them
+// replaced parts of the user agent when a short label occurred inside it (phase 4a, U5).
 function environmentLines() {
-  return Object.entries(describeEnvironment()).map(([key, value]) => `${key}: ${safe(value)}`);
+  return Object.entries(describeEnvironment()).map(([key, value]) => `${key}: ${value}`);
 }
 
 function selftestLines() {
   if (!selftestSummary) return ['not run in this session'];
   const s = selftestSummary;
   const lines = [`ran: ${safe(s.ran)}`, `passed ${safe(s.passed)}, failed ${safe(s.failed)}, skipped ${safe(s.skipped)}`];
+  // Group titles and ids are static config, so they are printed as they are.
+  for (const g of s.groups || []) lines.push(`group ${g.title}: passed ${g.passed}, failed ${g.failed}, skipped ${g.skipped}, ${g.ms} ms`);
   for (const failure of s.failing) {
     lines.push(`FAIL ${safe(failure.file)} :: ${safe(failure.name)}`, `  ${safe(failure.error)}`);
   }

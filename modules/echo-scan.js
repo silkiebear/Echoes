@@ -10,6 +10,7 @@ import { stats } from '../config/stats.js';
 import { statsSynth } from '../config/stats-synth.js';
 import { viewSettings } from '../config/views.js';
 import * as store from '../core/store.js';
+import { checkToggle } from '../core/gallery-kit.js';
 
 const ui = stats.ui;
 const PERCENT = 100;
@@ -72,6 +73,22 @@ export function sortOrder(rows, mode) {
   return [...all.filter((i) => rows[i].placeboP !== null), ...all.filter((i) => rows[i].placeboP === null)];
 }
 
+// A row is flagged when a flag is true (null is not a flag) or its long-run label marks it.
+function isFlagged(row) {
+  return row.longRuns === true || Object.values(row.flags).some((on) => on === true);
+}
+
+// Indices (engine order) of the rows to show. Hiding only filters the display; p, q, flags and order are unchanged.
+export function visibleRows(rows, hideFlagged) {
+  const all = rows.map((_, i) => i);
+  if (!hideFlagged) return all;
+  return all.filter((i) => !isFlagged(rows[i]));
+}
+
+function fill(text, values) {
+  return Object.entries(values).reduce((out, [key, value]) => out.replace(`{${key}}`, String(value)), text);
+}
+
 // One item per row: head (rank, exposure, outcome, window), metrics line, then the pills. Long-run rows also get a dashed border.
 function itemEl({ row, rank }, names) {
   const item = el('div', 'scan-item');
@@ -115,8 +132,13 @@ export default {
     const controls = el('div', 'scan-row');
     controls.append(sourceSel, modeSel, runBtn, cancelBtn, sortSel);
     const sortHelp = el('p', 'scan-help', ui.sortHelp);
+    let hideFlagged = false; // display filter; not reset by a new run
+    const hideToggle = checkToggle(ui.hideFlagged, (checked) => {
+      hideFlagged = checked;
+      renderResult();
+    });
     const box = el('div', 'scan-box');
-    box.append(controls, sortHelp, progress);
+    box.append(controls, hideToggle, sortHelp, progress);
     const result = el('div', 'scan-result');
     container.append(box, result);
 
@@ -143,7 +165,13 @@ export default {
       for (const notice of notices) result.append(el('p', 'scan-notice', pillText(notice)));
       if (meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
 
-      const order = sortOrder(rows, view.sort).map((i) => ({ row: rows[i], rank: i + 1 }));
+      const keep = new Set(visibleRows(rows, hideFlagged));
+      const order = sortOrder(rows, view.sort).filter((i) => keep.has(i)).map((i) => ({ row: rows[i], rank: i + 1 }));
+      if (rows.length > 0) result.append(el('p', 'scan-note', fill(ui.rowsShown, { shown: order.length, returned: rows.length })));
+      if (rows.length > 0 && order.length === 0) {
+        result.append(el('p', 'scan-notice', ui.allFlagged));
+        return;
+      }
       const shown = order.slice(0, view.limit);
       const list = el('div', 'scan-list');
       for (const entry of shown) list.append(itemEl(entry, view.names));
@@ -152,10 +180,18 @@ export default {
       if (order.length > shown.length) {
         const more = button(ui.showMore);
         more.addEventListener('click', () => {
-          view.limit = order.length;
+          view.limit = rows.length;
           renderResult();
         });
         result.append(more);
+      }
+      if (shown.length > ui.pageRows) {
+        const less = button(ui.showLess);
+        less.addEventListener('click', () => {
+          view.limit = ui.pageRows;
+          renderResult();
+        });
+        result.append(less);
       }
     }
 

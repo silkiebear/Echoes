@@ -84,6 +84,13 @@ export const stats = {
     cancelled: 'Cancelled',
     done: 'Done',
     showMore: 'Show more',
+    showLess: 'Show less',
+    // Display filter only: hiding never changes p, q, flags or order. A null flag is not a flag.
+    hideFlagged: 'Hide flagged results',
+    // "{shown}": rows left after hiding; "{returned}": rows the engine kept (at most keepTop).
+    rowsShown: '{shown} of {returned} rows',
+    // Shown when hiding leaves no row. It states the fact only: it does not say the results are right or wrong.
+    allFlagged: 'Every returned row carries a flag, and "Hide flagged results" is on. Turn it off to see them.',
     // Card sort control (M4). Client-side only: engine order is never changed and no row is hidden.
     sortModes: { q: 'By q (engine order)', placebo: 'Placebo-evaluated first' },
     labels: { source: 'Data source', mode: 'Scan mode', sort: 'Sort rows' },

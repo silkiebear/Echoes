@@ -131,6 +131,45 @@ ul.plain {
   padding: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+/* Tab bar (SPEC 15). Sticky at the top of the page; the active tab has bold text and a 3 px bottom border, so the
+   state does not depend on colour. Inactive tabs keep the same border width (transparent) so the labels do not move. */
+.tab-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  overflow-x: auto;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1 0 auto;
+  min-height: var(--touch);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.tab[aria-selected="true"] {
+  color: var(--text);
+  font-weight: bold;
+  border-bottom-color: var(--accent);
+}
+
+.tab-panel {
+  min-width: 0;
+}
+
 img, svg {
   max-width: 100%;
 }

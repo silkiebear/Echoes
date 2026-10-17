@@ -3,6 +3,9 @@ import { version } from '../config/version.js';
 import * as diag from './diag.js';
 import * as registry from './registry.js';
 import { modules as manifest } from '../modules/manifest.js';
+import { tabs, tabSettings } from '../config/tabs.js';
+import { buildTabs, checkTabs, initialTab, placeModules, readStoredTab } from './tabs.js';
+import { trackAnchor } from './scroll-anchor.js';
 
 const THEME_KEY = 'echoes.theme';
 
@@ -48,7 +51,23 @@ async function start() {
   initTheme();
   const { modules, errors } = await registry.loadModules(manifest, new URL('../modules/', import.meta.url));
   const ctx = { config: app, diag, registry, version, modules };
-  await registry.mountAll(document.getElementById('app'), ctx, modules);
+  const ids = modules.map((mod) => mod.id);
+  const check = checkTabs(tabs, ids, tabSettings);
+  for (const problem of check.errors) diag.log('ERROR', `tab map: ${problem}`);
+  if (check.unlisted.length) diag.logStatic('WARN', 'modules not in tab map', { count: check.unlisted.length });
+  const placement = placeModules(tabs, ids, tabSettings.unlistedTab);
+  const state = {
+    active: initialTab(tabs.map((tab) => tab.id), readStoredTab(tabSettings.storageKey), tabSettings.defaultTab),
+    storageKey: tabSettings.storageKey,
+  };
+  const host = document.getElementById('app');
+  const nav = buildTabs(host, tabs, state, {
+    label: tabSettings.ui.label,
+    warning: check.unlisted.length ? tabSettings.ui.warning : null,
+  });
+  await registry.mountAll(host, ctx, modules, (mod) => nav.panelFor(placement.get(mod.id)));
+  nav.show(state.active);
+  trackAnchor(host);
   diag.logStatic('INFO', 'started build', { build: version.build, modules: modules.length, rejected: errors.length });
 }
 

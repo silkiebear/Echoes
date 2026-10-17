@@ -16,6 +16,8 @@ import q2LabelCoding from '../modules/q2-label-coding.js';
 
 const WIDTH = 320;
 const MIN_TARGET = 44;
+// A word or number that takes more than this many lines has broken mid-word (phase 4a, U2).
+const MAX_LINES = 1.6;
 
 if (typeof document === 'undefined') {
   skip('data cards at 320 px: no horizontal scroll, 44 px targets, swatch fill, text contrast', 'browser only');
@@ -88,5 +90,33 @@ if (typeof document === 'undefined') {
       card.remove();
       store.set({ data: before.data, parseStats: before.parseStats, settings: before.settings });
     }
+  });
+
+  test('Q1 tables at 320 px: no word or number breaks mid-word; the card does not scroll sideways', () => {
+    const before = { ...store.get() };
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.style.width = `${WIDTH}px`;
+    document.body.append(card);
+    const failures = [];
+    try {
+      const data = parseExport(exportText(synth, {}), parser).data;
+      store.set({ data, settings: before.settings });
+      q1Coverage.mount(card, { diag });
+      // Measure the text, not the cell: a table cell takes the height of its row, so a neighbour can stretch it.
+      const cells = [...card.querySelectorAll('th, td')].filter((c) => !/\s/.test(c.textContent));
+      if (cells.length === 0) failures.push('no single-word cells in the Q1 tables');
+      for (const cell of cells) {
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        const lines = range.getBoundingClientRect().height / parseFloat(getComputedStyle(cell).lineHeight);
+        if (lines > MAX_LINES) failures.push(`"${cell.textContent}" takes ${lines.toFixed(2)} lines`);
+      }
+      if (card.scrollWidth > card.clientWidth) failures.push('card scrolls sideways');
+    } finally {
+      card.remove();
+      store.set({ data: before.data, parseStats: before.parseStats, settings: before.settings });
+    }
+    assert.equal(failures.length, 0, failures.slice(0, 10).join('; '));
   });
 }

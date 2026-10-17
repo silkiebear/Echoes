@@ -32,7 +32,8 @@ function summaryTable(q) {
   const body = el('tbody');
   for (const [term, value] of rows) {
     const tr = el('tr');
-    tr.append(el('th', null, term), el('td', null, value));
+    // Values without a space are numbers or dates: they do not wrap (the table scrolls inside .table-wrap instead).
+    tr.append(el('th', null, term), el('td', /\s/.test(value) ? null : 'num', value));
     body.append(tr);
   }
   table.append(body);
@@ -48,8 +49,8 @@ function yearTable(byYear) {
   const body = el('tbody');
   for (const row of byYear) {
     const tr = el('tr');
-    tr.append(el('td', null, row.year), el('td', null, String(row.days)),
-      el('td', null, String(row.daysWithEntries)), el('td', null, String(row.entries)));
+    tr.append(el('td', 'num', row.year), el('td', 'num', String(row.days)),
+      el('td', 'num', String(row.daysWithEntries)), el('td', 'num', String(row.entries)));
     body.append(tr);
   }
   table.append(thead, body);

@@ -3,9 +3,11 @@
 import { viewSettings } from '../config/views.js';
 import { mountSvg, sizeSvg } from './svg.js';
 import { attachZoom } from './zoom.js';
+import { restoreAnchor } from './scroll-anchor.js';
 
 const liveCards = new Set();
 let resizeTimer = null;
+let cardSeq = 0;
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -19,6 +21,7 @@ function redrawChangedCards() {
   for (const entry of liveCards) {
     if (entry.changed()) entry.redraw();
   }
+  restoreAnchor(document);
 }
 
 function scheduleRedraw() {
@@ -49,14 +52,21 @@ export function makeCard({ heading, note, controls, draw }) {
     redraw,
   };
 
+  // Holds the previous height while the new chart is mounted, then releases it. The mount is synchronous, so this
+  // only matters if a later step reads layout in between (UNVERIFIED on a phone).
   function redraw() {
     const measured = scroll.clientWidth;
     entry.lastWidth = measured;
+    chart.style.minHeight = `${chart.offsetHeight}px`;
     mountSvg(chart, draw(measured || viewSettings.defaultWidth));
     sizeSvg(chart.querySelector('svg'), viewSettings.minWidth);
+    chart.style.minHeight = '';
     zoom.refresh();
   }
 
+  // Scroll anchor target (scroll-anchor.js). A card holds no other anchor, so it is the innermost one.
+  cardSeq += 1;
+  card.dataset.anchor = `chart-${cardSeq}`;
   card.append(el('h2', null, heading), el('p', 'card-sub', note), ...controls(redraw), scroll);
   const zoom = attachZoom(scroll, viewSettings.zoom);
   liveCards.add(entry);

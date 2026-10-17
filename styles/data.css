@@ -55,18 +55,26 @@ button[aria-pressed="true"] {
   margin: var(--space-1) 0;
 }
 
+/* break-word, not anywhere: "anywhere" lowers the minimum width of a cell, so the table shrinks a column to one
+   character and words and numbers break mid-word (phase 4a measurement at 320 px). Headers and numbers do not wrap;
+   the table scrolls inside .table-wrap instead. */
 .quality th,
 .quality td {
   text-align: left;
   vertical-align: top;
   padding: var(--space-1);
   border-bottom: 1px solid var(--border);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .quality thead th {
   color: var(--text-muted);
   font-weight: normal;
+}
+
+.quality thead th,
+.quality .num {
+  white-space: nowrap;
 }
 
 .label-list {

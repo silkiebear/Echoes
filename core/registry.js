@@ -60,16 +60,18 @@ export async function loadModules(list, baseUrl) {
   return { modules: checked.modules, errors };
 }
 
-export async function mountAll(container, ctx, modules) {
+// panelFor(mod) picks the element a module is mounted into (its tab panel); default: the container.
+export async function mountAll(container, ctx, modules, panelFor = () => container) {
   for (const mod of modules) {
     const section = document.createElement('section');
     section.className = 'card';
     section.dataset.module = mod.id;
+    section.dataset.anchor = mod.id;
     const heading = document.createElement('h2');
     heading.textContent = mod.title;
     const body = document.createElement('div');
     section.append(heading, body);
-    container.append(section);
+    panelFor(mod).append(section);
     try {
       await mod.mount(body, ctx);
     } catch (err) {

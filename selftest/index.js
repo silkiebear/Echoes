@@ -44,4 +44,9 @@ export const tests = [
   './selftest/stats-autocorr.test.js',
   './selftest/stats-client.test.js',
   './selftest/scan-ui.test.js',
+  './selftest/tabs.test.js',
+  './selftest/tabs-ui.test.js',
+  './selftest/scroll-anchor.test.js',
+  './selftest/diag-env.test.js',
+  './selftest/selftest-groups.test.js',
 ];

@@ -7,6 +7,7 @@ import { generate } from '../core/synth.js';
 import { buildHourGrid, buildDial } from '../core/period-demo.js';
 import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 import { banner, makeCard, variantButtons, selectControl, checkToggle } from '../core/gallery-kit.js';
+import { notes } from '../config/notes.js';
 
 const G = viewSettings.gallery;
 const T = viewSettings.time;
@@ -41,7 +42,7 @@ function p2Card(view, shared, labelOptions, dialIds, defaultLabelId) {
   const state = { variant: view.variants[0].id, labelId: defaultLabelId };
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: 'Marks by hour of day (synthetic). Wedges: length = marks in the hour. Rings: one ring per label, shade = share of that label marks in the hour.',
+    note: `Marks by hour of day (synthetic). Wedges: length = marks in the hour. Rings: one ring per label, shade = share of that label marks in the hour. ${notes.p2Rings}`,
     controls: (redraw) => [
       variantButtons(view.variants, state, redraw),
       selectControl('Label', labelOptions, state.labelId, (value) => {
