@@ -16,4 +16,5 @@ export const modules = [
   './explore-select.js',
   './explore-time.js',
   './explore-periodic.js',
+  './explore-echo.js',
 ];

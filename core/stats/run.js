@@ -5,7 +5,7 @@
 //
 // result = {
 //   meta: { cellsTested, cellsUntested, kept, discoveries, discoveriesLongRuns, family, ms, runner, cancelled, seed,
-//           up, down, noDirection, byWindow, untested },
+//           up, down, noDirection, byWindow, untested, dayVolume (counts only, 4d.3), strata { mode, days, bands } },
 //   rows: [{ exposure, outcome, window, n, k, K, N, rate, base, rr, diff, rrAdj, p, pFisher, q,
 //            placeboP, placeboPercentile, longRuns,
 //            flags: { lowSample, failsFdr, failsTimeSplit, lowCompletenessSensitive, highAutocorrelation,
@@ -28,6 +28,8 @@ import { scanCells, makeCheckpoint } from './scan.js';
 import { bhOnKept } from './fdr.js';
 import { rateStats } from './rate.js';
 import { outcomeMasks } from './cell-counts.js';
+import { stratumBands } from './strata.js';
+import { dailyVolumes, observedVolumes, volumeSummary } from './day-volume.js';
 import { placeboForCell } from './placebo-run.js';
 import { timeSplitFails } from './timesplit.js';
 import { lowCompletenessFlag, lowSampleFlag, shortWindowFlag, failsFdrFlag, newLabelFlag, highAutocorrelationFlag, directionAmbiguityFlag } from './flags.js';
@@ -61,6 +63,7 @@ export async function runScan(input, options = {}, hooks = {}) {
   const metaOf = (extra) => ({
     cellsTested: 0, cellsUntested: 0, kept: 0, discoveries: 0, discoveriesLongRuns: 0, family: 0, filtered: null,
     up: 0, down: 0, noDirection: 0, byWindow: cfg.windows.map(() => 0), untested: 0,
+    dayVolume: null, strata: null,
     ms: Math.round(now() - started), runner, cancelled: false, seed, ...extra,
   });
   const cancelledResult = () => ({ meta: metaOf({ cancelled: true }), rows: [], notices: [] });
@@ -161,6 +164,9 @@ export async function runScan(input, options = {}, hooks = {}) {
     noDirection: found.filter((c) => !hasRatio(c)).length,
     byWindow: cfg.windows.map((_, wi) => found.filter((c) => c.wi === wi).length),
     untested: scan.untested,
+    // Counts only (4d.3): distinct labels per observed day, and the strata rule the scan used.
+    dayVolume: volumeSummary(observedVolumes(p, dailyVolumes(p)), cfg.dayVolumeQuantiles),
+    strata: { mode: cfg.strata.mode, days: cfg.strata.days, bands: stratumBands(cfg.strata) },
   });
   return { meta, rows, notices };
 }

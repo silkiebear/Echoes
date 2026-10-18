@@ -1,9 +1,11 @@
 // Colour bins and legends. Colours are CSS variables --div-1 to --div-7 (classes bin-1 to bin-7). Bin 0 is the
 // null/n-a class. Every view takes its colour from here, so the scale is defined in one place.
 import { viewSettings } from '../config/views.js';
+import { explore } from '../config/explore.js';
 import { formatRatio } from '../core/format.js';
 import { svgText } from '../core/svg.js';
 import { estimateWidth } from '../core/textfit.js';
+import { isHexColour } from '../core/view-data.js';
 
 const { colorBins, clampLog2, minRr } = viewSettings.diverging;
 const { legendBinWidth, legendBarHeight, legendLabelGap } = viewSettings.matrix;
@@ -44,13 +46,26 @@ export function legendSvg(x, y) {
   return out;
 }
 
-// Key row: one swatch and name per item ({ bin, name }), left to right. Returns { svg, width }.
+// A mood colour from the settings, checked before it reaches the markup (4d.0.2).
+export function scaleColour(color) {
+  return isHexColour(color) ? color : explore.mood.fallbackColor;
+}
+
+// Fill of a mood score under a settings scale (core/view-data.js moodScale). A score with no entry gets the fallback.
+export function scaleFill(score, scale) {
+  const entry = scale.find((e) => e.score === score);
+  return entry ? scaleColour(entry.color) : explore.mood.fallbackColor;
+}
+
+// Key row: one swatch and name per item, left to right. An item is { bin, name } (the demo scale, classes bin-N) or
+// { color, name } (a settings scale: the stored colour as a style fill). Returns { svg, width }.
 export function keyRow(x, y, items) {
   const sw = time.moodSwatch;
   let cursor = x;
   let out = '';
   for (const item of items) {
-    out += `<rect class="bin-${item.bin}" x="${cursor}" y="${y}" width="${sw}" height="${sw}"/>`;
+    const paint = item.color === undefined ? `class="bin-${item.bin}"` : `style="fill: ${scaleColour(item.color)}"`;
+    out += `<rect ${paint} x="${cursor}" y="${y}" width="${sw}" height="${sw}"/>`;
     out += svgText(cursor + sw + time.smallGap, y + sw / 2, item.name, 't-muted', 'start', smallFontPx);
     cursor += sw + time.smallGap + estimateWidth(item.name, smallFontPx) + time.moodLegendGap;
   }
@@ -60,4 +75,9 @@ export function keyRow(x, y, items) {
 // Mood key from bad (score 1) to great (score 5).
 export function moodLegend(x, y) {
   return keyRow(x, y, time.moodNames.map((name, i) => ({ bin: moodBin(i + 1), name })));
+}
+
+// Mood key from a settings scale (worst to best): the name is text, the colour is the stored one.
+export function scaleLegend(x, y, scale) {
+  return keyRow(x, y, scale.map((e) => ({ color: e.color, name: e.name })));
 }

@@ -69,7 +69,13 @@ export const stats = {
   // 'fisher' is the phase 3 behaviour (pooled exact test, no active-period restriction, no strata); the gates compare with it.
   scanTest: 'stratified',
   // Choice (4b.3, D12): stratum length in calendar days, counted from the first observed day.
-  strata: { days: 30 },
+  // Choice (4d.3, option B): mode 'volume' splits the observed days of each block into intensityBands bands by the number
+  // of distinct labels logged that day. It FAILED the nulls (G1, G6, P6) and the G7 and G7b gates in phase 4d because the
+  // exposure's own presence raises the volume of its days (notes\phase4d.md section 7), so the default stays 'blocks'
+  // (the 4b method, unchanged) until the user decides.
+  strata: { days: 30, mode: 'blocks', intensityBands: 3 },
+  // Derived (4d.3): quantiles of the distinct labels per observed day, reported as counts (nearest rank).
+  dayVolumeQuantiles: [0.1, 0.5, 0.9],
   // Choice (4b.3, D15): a cell whose summed variance is below this is untested; the normal approximation is poor for tiny counts.
   minVariance: 2,
   // Choice (4b.2): the normal tail uses an erf series below seriesBelow and a continued fraction of this depth above it.
@@ -239,6 +245,8 @@ export const stats = {
       direction: 'Of the {discoveries}, {up} show the outcome more often than usual and {down} less often.',
       noDirection: 'Without a direction: {count}.',
       byWindow: 'Results by time window: {list}.',
+      // Decision A (phase 4d): the check does not adjust for how many items were logged on a day or for weekly patterns.
+      limits: 'The check does not allow for how many items you logged on a day, or for weekly patterns.',
       caution: 'Passing the check does not show that a result is real.',
     },
     // The technical layer: shown only with "Show technical numbers". Each number carries its meaning.
@@ -248,6 +256,9 @@ export const stats = {
       notKept: 'not kept (too weak)',
       notRun: 'not run',
       summaryUntested: 'untested: {count}',
+      // The strata rule in words for the technical summary: 'blocks' (4b) or 'volume' (4d.3, option B).
+      rule: { blocks: 'strata: {days}-day blocks', volume: 'strata: {days}-day blocks, each split into {bands} bands by distinct labels per day' },
+      volumeLine: 'distinct labels per observed day (logging volume): min {min} · 10th percentile {p10} · median {median} · 90th percentile {p90} · max {max}',
     },
     howToTitle: 'How to read this',
     // Shown at the top of the results, closed by default.

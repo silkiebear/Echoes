@@ -3,10 +3,19 @@
 // Simplification (D14, stated): the outcome input uses all evaluable days of the pair, not only the days of one
 // exposure's active period.
 import { withinStratumLagOne } from './stratified.js';
+import { dailyVolumes } from './day-volume.js';
 
-// index[d] is the stratum of day d (blocks of `days` from the first observed day, -1 before it). scratch holds the
+// Number of bands per block (phase 4d, option B). 'blocks' is the 4b method: one band, the index is the block.
+export function stratumBands(strataCfg) {
+  if (strataCfg.mode === 'blocks' || !(strataCfg.intensityBands > 1)) return 1;
+  return strataCfg.intensityBands;
+}
+
+// index[d] is the stratum of day d: blocks of `days` from the first observed day, times the number of bands, plus the
+// day's band. -1 before the first observed day. With bands above 1, the observed days of each block are ranked by their
+// number of distinct labels (ties by day) and split into equal-count bands, lowest volume first. scratch holds the
 // per-cell arrays that restrictedCell reuses, so no arrays are allocated per cell.
-export function strataGeometry(p, days) {
+export function strataGeometry(p, days, bands = 1) {
   let base = -1;
   for (let t = 0; t < p.n; t += 1) {
     if (p.observed[t]) {
@@ -15,16 +24,33 @@ export function strataGeometry(p, days) {
     }
   }
   const index = new Int32Array(p.n).fill(-1);
-  let count = 0;
+  let blocks = 0;
   if (base >= 0) {
-    for (let t = base; t < p.n; t += 1) index[t] = Math.floor((t - base) / days);
-    count = index[p.n - 1] + 1;
+    for (let t = base; t < p.n; t += 1) index[t] = Math.floor((t - base) / days) * bands;
+    blocks = Math.floor((p.n - 1 - base) / days) + 1;
+    if (bands > 1) assignBands(p, index, base, days, blocks, bands);
   }
+  const count = blocks * bands;
   const size = count + 1;
   const scratch = {
     ns: new Int32Array(size), ks: new Int32Array(size), NN: new Int32Array(size), KK: new Int32Array(size),
   };
-  return { base, days, index, count, scratch };
+  return { base, days, bands, blocks, index, count, scratch };
+}
+
+function assignBands(p, index, base, days, blocks, bands) {
+  const volumes = dailyVolumes(p);
+  for (let bl = 0; bl < blocks; bl += 1) {
+    const start = base + bl * days;
+    const end = Math.min(p.n, start + days);
+    const observed = [];
+    for (let t = start; t < end; t += 1) if (p.observed[t]) observed.push(t);
+    observed.sort((a, b) => volumes[a] - volumes[b] || a - b);
+    const m = observed.length;
+    observed.forEach((t, rank) => {
+      index[t] = bl * bands + Math.floor((rank * bands) / m);
+    });
+  }
 }
 
 // Lag-1 correlation of each label's daily presence over observed days, within strata (D14: exposure input).

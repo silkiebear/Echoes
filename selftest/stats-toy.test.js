@@ -11,6 +11,10 @@ import { buildQuality } from '../core/quality.js';
 import { defaultSettings } from '../core/settings.js';
 import { generateWide } from '../core/synth-wide.js';
 import { statsSynth } from '../config/stats-synth.js';
+import { strataGeometry } from '../core/stats/strata.js';
+import { restrictedCell, restrictedCellBanded, bandTotals, maskPrefixes } from '../core/stats/cell-counts.js';
+import { generateDrift } from '../core/synth-drift.js';
+import { statsDrift } from '../config/stats-drift.js';
 
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 const TOL = 1e-12;
@@ -18,6 +22,96 @@ const TOL = 1e-12;
 function expectNear(actual, expected, msg) {
   assert.ok(near(actual, expected, TOL), `${msg}: expected ${expected}, got ${actual}`);
 }
+
+// Logging-volume bands (phase 4d, option B). Hand case: 6 days in blocks of 3, distinct labels per day 2 1 3 | 3 1 2.
+// Block 0 ranked by (volume, day): day 1 (1), day 0 (2), day 2 (3) -> bands 0, 1, 2. Block 1: day 4 (1), day 5 (2),
+// day 3 (3) -> bands 0, 1, 2. Stratum index = block x 3 + band: [1, 0, 2, 5, 3, 4].
+function toyPrepared() {
+  return {
+    n: 6,
+    labelCount: 3,
+    observed: new Uint8Array(6).fill(1),
+    labelDays: [Int32Array.from([0, 1, 2, 3, 4, 5]), Int32Array.from([0, 2, 3, 5]), Int32Array.from([2, 3])],
+    first: Int32Array.from([0, 0, 2]),
+    last: Int32Array.from([5, 5, 3]),
+  };
+}
+
+test('logging-volume bands, hand case: the strata index and the per-stratum totals match the hand count', () => {
+  const p = toyPrepared();
+  const geo = strataGeometry(p, 3, 3);
+  assert.deepEqual(Array.from(geo.index), [1, 0, 2, 5, 3, 4], 'index');
+  assert.equal(geo.count, 6, 'strata');
+  // Outcome evaluable on days 0 to 4, hit on days 1, 2 and 4 (its window hits).
+  const masks = { evaluable: Uint8Array.from([1, 1, 1, 1, 1, 0]), hit: Uint8Array.from([0, 1, 1, 0, 1, 0]) };
+  const totals = bandTotals(p, masks, geo);
+  assert.deepEqual(Array.from(totals.totN), [1, 1, 1, 1, 0, 1], 'evaluable days per stratum');
+  assert.deepEqual(Array.from(totals.totK), [1, 0, 1, 1, 0, 0], 'hit days per stratum');
+  const cell = restrictedCellBanded(p, 1, masks, totals, geo);
+  assert.deepEqual(
+    { N: cell.N, K: cell.K, n: cell.n, k: cell.k, strata: cell.strata },
+    { N: 5, K: 3, n: 3, k: 1, strata: [{ N: 1, K: 0, n: 1, k: 0 }, { N: 1, K: 1, n: 1, k: 1 }, { N: 1, K: 0, n: 1, k: 0 }] },
+    'cell of Label 1',
+  );
+});
+
+test('logging-volume bands: with one band the banded counts equal the 4b counts for every cell of a generated pair', () => {
+  const data = generateDrift(statsDrift, statsDrift.seed, 12);
+  const p = prepare({ data, settings: defaultSettings() });
+  const geo = strataGeometry(p, stats.strata.days, 1);
+  let checked = 0;
+  for (let o = 0; o < p.labelCount; o += 1) {
+    for (const w of [1, 7]) {
+      const masks = outcomeMasks(p, o, w, stats.minWindowCoverage);
+      const pre = maskPrefixes(masks, p.n);
+      const totals = bandTotals(p, masks, geo);
+      for (let e = 0; e < p.labelCount; e += 1) {
+        if (p.labelDays[e].length === 0) continue;
+        const old = restrictedCell(p, e, masks, pre, geo);
+        const banded = restrictedCellBanded(p, e, masks, totals, geo);
+        assert.deepEqual(banded, old, `pair ${e} -> ${o} window ${w}`);
+        checked += 1;
+      }
+    }
+  }
+  assert.ok(checked > 0, 'some cells checked');
+});
+
+test('logging-volume bands: three bands keep every total of the 4b counts and split the strata of each cell', () => {
+  const data = generateDrift(statsDrift, statsDrift.seed, 12);
+  const p = prepare({ data, settings: defaultSettings() });
+  const geo1 = strataGeometry(p, stats.strata.days, 1);
+  const geo3 = strataGeometry(p, stats.strata.days, 3);
+  for (let o = 0; o < p.labelCount; o += 1) {
+    const masks = outcomeMasks(p, o, 7, stats.minWindowCoverage);
+    const pre = maskPrefixes(masks, p.n);
+    const totals3 = bandTotals(p, masks, geo3);
+    for (let e = 0; e < p.labelCount; e += 1) {
+      if (p.labelDays[e].length === 0) continue;
+      const old = restrictedCell(p, e, masks, pre, geo1);
+      const banded = restrictedCellBanded(p, e, masks, totals3, geo3);
+      assert.deepEqual([banded.N, banded.K, banded.n, banded.k], [old.N, old.K, old.n, old.k], `totals ${e} -> ${o}`);
+      assert.equal(banded.strata.reduce((s, x) => s + x.n, 0), banded.n, 'strata hold every exposed day');
+      assert.equal(banded.strata.reduce((s, x) => s + x.k, 0), banded.k, 'strata hold every exposed hit');
+    }
+  }
+});
+
+test('logging-volume bands: each block splits its observed days into bands that differ by at most one day', () => {
+  const data = generateDrift(statsDrift, statsDrift.seed, 60);
+  const p = prepare({ data, settings: defaultSettings() });
+  const geo = strataGeometry(p, stats.strata.days, 3);
+  const sizes = new Map();
+  for (let t = geo.base; t < p.n; t += 1) {
+    if (!p.observed[t]) continue;
+    const s = geo.index[t];
+    sizes.set(s, (sizes.get(s) || 0) + 1);
+  }
+  for (let bl = 0; bl < geo.blocks; bl += 1) {
+    const counts = [0, 1, 2].map((q) => sizes.get(bl * 3 + q) || 0);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 1, `block ${bl}: ${counts.join(' ')}`);
+  }
+});
 
 // Ten days. Label 0 is the exposure, label 1 the outcome. Unobserved days have no labels and no entries.
 function toyData(exposureDays, outcomeDays, unobserved = []) {

@@ -4,10 +4,10 @@
 // strata.js), on counts restricted to the exposure's active period (cell-counts.js). 'fisher': the phase 3 pooled exact
 // test on the full masks, kept so the gates can compare.
 import { fisherTwoSided } from './exact.js';
-import { outcomeMasks, exposedCounts, maskPrefixes, restrictedCell } from './cell-counts.js';
+import { outcomeMasks, exposedCounts, maskPrefixes, restrictedCell, restrictedCellBanded, bandTotals } from './cell-counts.js';
 import { mantelHaenszel, inflationFactor, adjustedZ } from './stratified.js';
 import { twoSidedP } from './normal.js';
-import { strataGeometry, labelPhi, outcomePhi } from './strata.js';
+import { strataGeometry, labelPhi, outcomePhi, stratumBands } from './strata.js';
 
 const now = () => performance.now();
 
@@ -58,9 +58,11 @@ function fisherPair(p, cfg, masks, o, wi, withDays, out, hooks) {
 function stratifiedPair(p, cfg, geo, phiE, masks, o, wi, withDays, out, hooks) {
   const pre = maskPrefixes(masks, p.n);
   const phiO = outcomePhi(p, masks, geo);
+  // Logging-volume bands (4d.3) count with per-stratum totals; one band keeps the 4b counting path unchanged.
+  const totals = geo.bands > 1 ? bandTotals(p, masks, geo) : null;
   for (const e of withDays) {
     if (e === o && !cfg.includeSelf) continue;
-    const cell = restrictedCell(p, e, masks, pre, geo);
+    const cell = totals ? restrictedCellBanded(p, e, masks, totals, geo) : restrictedCell(p, e, masks, pre, geo);
     if (cell.n < cfg.minExposed || cell.K < cfg.minBaseHits || cell.K >= cell.N) {
       out.untested += 1;
       continue;
@@ -89,7 +91,7 @@ export async function scanCells(p, cfg, hooks = {}) {
   const withDays = [];
   for (let id = 0; id < p.labelCount; id += 1) if (p.labelDays[id].length) withDays.push(id);
   const stratified = cfg.scanTest !== 'fisher';
-  const geo = stratified ? strataGeometry(p, cfg.strata.days) : null;
+  const geo = stratified ? strataGeometry(p, cfg.strata.days, stratumBands(cfg.strata)) : null;
   const phiE = stratified ? labelPhi(p, geo) : null;
   const W = cfg.windows.length;
   for (let wi = 0; wi < W; wi += 1) {

@@ -50,8 +50,9 @@ function render(data, opts = {}) {
 
   // Caption: wrapped by estimated width into its own band below the x labels.
   const captionTop = xLabelY + smallFontPx / 2 + c.captionGap;
+  // opts.caption and opts.desc (phase 4d, 4d.4): the real-data card states its own band; without them the demo text is kept.
   const caption = wrapText(
-    `days after exposure; demo band +-${formatPercent(c.bandFraction)} around baseline, not a placebo band`,
+    opts.caption ?? `days after exposure; demo band +-${formatPercent(c.bandFraction)} around baseline, not a placebo band`,
     smallFontPx,
     width - 2 * c.pad,
   );
@@ -65,7 +66,7 @@ function render(data, opts = {}) {
     width,
     height,
     title: 'E2 Echo curve',
-    desc: `Outcome rate by days after an exposure, with a demo band, ${data.eventLabel} to ${data.outcomeLabel}`,
+    desc: opts.desc ?? `Outcome rate by days after an exposure, with a demo band, ${data.eventLabel} to ${data.outcomeLabel}`,
     body,
   });
 }

@@ -10,6 +10,7 @@ import { dayCountsOf } from '../core/selection.js';
 import { buildYearData, buildLanesData, buildStripData, buildRollingData } from '../core/time-demo.js';
 import { formatNumber } from '../core/format.js';
 import { viewDataFor, observedOf, selectedIds, fill, messageSvg, setNote } from '../core/explore-kit.js';
+import { moodScale } from '../core/view-data.js';
 
 const T = viewSettings.time;
 const ui = explore.ui;
@@ -82,7 +83,7 @@ export default {
       const data = buildYearData(viewDataFor(s), t1State.year, t1State.labelId);
       const present = data.days.filter((d) => d.present === 1).length;
       setNote(t1Card.card, fill(ui.noteT1, { days: formatNumber(present), descriptive: ui.descriptive }));
-      return t1.render(data, { ...t1State, width });
+      return t1.render(data, { ...t1State, width, moodScale: moodScale(s.settings) });
     }
 
     // T2: lanes for the selection over a mood band; the range is the existing choice list.
@@ -100,7 +101,7 @@ export default {
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
         setNote(t2Card.card, fill(ui.noteT2, { list: listOf(s, selected()), descriptive: ui.descriptive }));
-        return t2.render(buildLanesData(viewDataFor(s), selected()), { range: t2State.range, width });
+        return t2.render(buildLanesData(viewDataFor(s), selected()), { range: t2State.range, width, moodScale: moodScale(s.settings) });
       },
     });
     cards.push(t2Card);

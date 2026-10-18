@@ -5,7 +5,6 @@
 import { startScan } from '../core/stats/client.js';
 import { generateWide } from '../core/synth-wide.js';
 import { defaultSettings } from '../core/settings.js';
-import { formatNumber } from '../core/format.js';
 import { windows } from '../config/windows.js';
 import { stats } from '../config/stats.js';
 import { statsSynth } from '../config/stats-synth.js';
@@ -15,6 +14,8 @@ import { filterControls } from '../core/scan-filter-ui.js';
 import { normalizeFilter } from '../core/stats/label-filter.js';
 import { describeRow, plainSummary } from '../core/scan-text.js';
 import { itemNode, howToNode } from '../core/scan-render.js';
+import { exploreEcho } from '../config/explore-echo.js';
+import { summaryText } from '../core/scan-summary.js';
 
 const ui = stats.ui;
 const PERCENT = 100;
@@ -46,19 +47,16 @@ function selectOf(texts, label) {
 
 const pillText = (id) => ui.pillNames[id] || id;
 
-// Technical summary (shown with "Show technical numbers"): every old number, with its name.
-function summaryText(meta) {
-  const s = ui.summary;
-  const discoveries = `${s.discoveries}: ${formatNumber(meta.discoveries)} `
-    + `(${s.longRuns}: ${formatNumber(meta.discoveriesLongRuns)}, ${s.withoutLongRuns}: ${formatNumber(meta.discoveries - meta.discoveriesLongRuns)})`;
-  return [
-    `${s.cells}: ${formatNumber(meta.cellsTested)}`,
-    `${s.family}: ${formatNumber(meta.family)} ${s.familyUnit}`,
-    discoveries,
-    `${formatNumber(meta.ms)} ${s.ms}`,
-    `${s.runner}: ${meta.runner}`,
-    ui.technical.summaryUntested.replace('{count}', formatNumber(meta.untested)),
-  ].join(ui.sep);
+
+// Puts the pair in Explore (4d.4): the selection is the exposure then the outcome, the store keeps the window, and the
+// Explore tab is opened. Only for a scan of the loaded export (the synthetic samples are not in the store).
+function pairButton(row) {
+  const btn = button(exploreEcho.ui.pairButton);
+  btn.addEventListener('click', () => {
+    store.set({ selection: [row.exposure, row.outcome], pair: { window: row.window } });
+    document.getElementById('tab-explore')?.click();
+  });
+  return btn;
 }
 
 // Engine order, or (placebo mode) rows with a placebo p first. Both groups keep the engine order; no row is removed.
@@ -141,7 +139,7 @@ export default {
       }
       result.append(howTo);
       for (const sentence of plainSummary(meta, windows, stats)) result.append(el('p', 'scan-note', sentence));
-      if (showTechnical) result.append(el('p', 'scan-note', summaryText(meta)));
+      if (showTechnical) result.append(el('p', 'scan-note', summaryText(meta, ui)));
       if (meta.filtered !== null) result.append(el('p', 'scan-note', fill(ui.filter.matches, { filtered: meta.filtered })));
       for (const notice of notices) result.append(el('p', 'scan-notice', pillText(notice)));
       if (showTechnical && meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
@@ -157,7 +155,9 @@ export default {
       const list = el('div', 'scan-list');
       for (const { row, rank } of shown) {
         const desc = describeRow(row, view.labels, windows, meta, stats, rank);
-        list.append(itemNode(desc, row, ui, showTechnical));
+        const item = itemNode(desc, row, ui, showTechnical);
+        if (view.loaded) item.append(pairButton(row));
+        list.append(item);
       }
       result.append(list);
 
@@ -225,8 +225,13 @@ export default {
           labels: input.data.labels,
           sort: sortSel.value,
           limit: ui.pageRows,
+          loaded: source === 'loaded',
         };
+        if (!out.meta.cancelled && source === 'loaded') {
+          store.set({ scanResult: { rows: out.rows, meta: out.meta, data: input.data, settings: input.settings } });
+        }
         if (!out.meta.cancelled) {
+          const v = out.meta.dayVolume;
           diag.logStatic('INFO', 'echo scan done', {
             cells: out.meta.cellsTested,
             discoveries: out.meta.discoveries,
@@ -236,6 +241,12 @@ export default {
             untested: out.meta.untested,
             ms: out.meta.ms,
             runner: out.meta.runner,
+            volMin: v ? v.min : 0,
+            volP10: v ? v.p10 : 0,
+            volMedian: v ? v.median : 0,
+            volP90: v ? v.p90 : 0,
+            volMax: v ? v.max : 0,
+            strataBands: out.meta.strata ? out.meta.strata.bands : 0,
           });
         }
       }

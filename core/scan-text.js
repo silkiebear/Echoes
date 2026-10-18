@@ -136,6 +136,7 @@ export function plainSummary(meta, windows, cfg) {
     });
     if (parts.length) lines.push(fill(s.byWindow, { list: parts.join(', ') }));
   }
+  lines.push(s.limits);
   lines.push(s.caution);
   return lines;
 }

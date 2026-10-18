@@ -1,10 +1,23 @@
 // Adapter from parsed data to the builder shape (phase 4c, 4c.2; pure, Node and browser). Hand cases for the weekday
 // (from the assigned date), the day mood (mean of the entries' scores, rounded to the nearest whole score with halves
-// up), days without a usable mood, and the error for a missing argument.
+// up), days without a usable mood, and the error for a missing argument. Phase 4d (4d.0.2): the mood scale from the
+// settings and the T1 and T2 views with and without it (kept here because views.test.js and layout.test.js are not on
+// the 4d allowed list).
 import { test, assert } from '../core/harness.js';
-import { toViewData } from '../core/view-data.js';
+import { toViewData, moodScale } from '../core/view-data.js';
 import { weekdayOf } from '../core/calendar.js';
 import { explore } from '../config/explore.js';
+import { viewSettings } from '../config/views.js';
+import { settingsConfig } from '../config/settings.js';
+import { synth } from '../config/synth.js';
+import { parser } from '../config/parser.js';
+import { exportText } from '../core/synth-export.js';
+import { parseExport } from '../core/export-parse.js';
+import { defaultSettings } from '../core/settings.js';
+import { buildYearData, buildLanesData } from '../core/time-demo.js';
+import { textBox, insideView } from '../core/textfit.js';
+import t1 from '../views/t1-year-grid.js';
+import t2 from '../views/t2-lanes.js';
 
 // Three moods: A is best (score 3), B 2, C 1 (score = count - order + 1).
 const SETTINGS = { moods: [{ name: 'A', order: 1 }, { name: 'B', order: 2 }, { name: 'C', order: 3 }] };
@@ -73,4 +86,172 @@ test('toViewData: entries without a time are left out of the time views and coun
   const view = toViewData(data, SETTINGS, explore);
   assert.deepEqual(view.entries, [{ date: '2024-01-01', minutes: 615, labels: [0] }], 'timed entries');
   assert.equal(view.untimedCount, 1, 'untimed count');
+});
+
+test('moodScale: default presets give five entries, worst first, scores 1 to 5, and the preset colours', () => {
+  const scale = moodScale(defaultSettings());
+  assert.deepEqual(scale.map((e) => e.name), ['awful', 'bad', 'meh', 'good', 'yay!'], 'names worst first');
+  assert.deepEqual(scale.map((e) => e.score), [1, 2, 3, 4, 5], 'scores');
+  for (const e of scale) {
+    const preset = settingsConfig.moodPresets.find((m) => m.name === e.name);
+    assert.equal(e.color, preset.color, `${e.name} colour`);
+  }
+});
+
+test('moodScale: a custom list of three moods takes its order from the settings', () => {
+  const scale = moodScale({ moods: [
+    { name: 'A', order: 1, color: '#111111' },
+    { name: 'B', order: 2, color: '#222222' },
+    { name: 'C', order: 3, color: '#333333' },
+  ] });
+  assert.deepEqual(scale, [
+    { score: 1, name: 'C', color: '#333333' },
+    { score: 2, name: 'B', color: '#222222' },
+    { score: 3, name: 'A', color: '#111111' },
+  ], 'scale');
+});
+
+test('moodScale: a colour that is not #rrggbb gets the config fallback colour', () => {
+  const scale = moodScale({ moods: [
+    { name: 'A', order: 1, color: 'red' },
+    { name: 'B', order: 2, color: '#12345' },
+    { name: 'C', order: 3, color: '#gggggg' },
+  ] });
+  assert.deepEqual(scale.map((e) => e.color), [explore.mood.fallbackColor, explore.mood.fallbackColor, explore.mood.fallbackColor], 'colours');
+});
+
+test('moodScale: __proto__ and constructor as mood names change no object', () => {
+  const settings = { moods: [
+    { name: '__proto__', order: 1, color: '#111111' },
+    { name: 'constructor', order: 2, color: '#222222' },
+  ] };
+  const before = JSON.stringify(settings);
+  const scale = moodScale(settings);
+  assert.deepEqual(scale, [
+    { score: 1, name: 'constructor', color: '#222222' },
+    { score: 2, name: '__proto__', color: '#111111' },
+  ], 'entries');
+  assert.equal(JSON.stringify(settings), before, 'settings unchanged');
+  assert.equal(Object.getPrototypeOf(scale[0]), Object.prototype, 'entry prototype');
+});
+
+// Mood scale views (4d.0.2). The fingerprints (length and FNV-1a 32-bit hash) were taken from the markup of T1 and
+// T2 before opts.moodScale existed, on the default synthetic export with the default presets.
+function fnv(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+const BEFORE = {
+  'T1 a mood 320': [25544, '24ef6028'],
+  'T1 b mood 320': [26503, '4699af8d'],
+  'T1 a label 320': [25090, '12177470'],
+  'T2 320': [36947, 'f8f11872'],
+  'T1 a mood 900': [26365, 'f6d98745'],
+  'T1 b mood 900': [26548, '71c481f8'],
+  'T1 a label 900': [25905, 'e75b3587'],
+  'T2 900': [66882, '48126066'],
+};
+const WIDTHS = [320, 900];
+const exported = parseExport(exportText(synth, {}), parser).data;
+const demoView = toViewData(exported, defaultSettings(), explore);
+const YEAR = Number(demoView.days[demoView.days.length - 1].date.slice(0, 4));
+const PALETTE = settingsConfig.moodPalette.slice(0, viewSettings.time.moodNames.length);
+
+// Mood names with the scores of the synthetic export: the first name is score 1 (the demo names, worst first).
+function scaleOf(names) {
+  return { moods: names.map((name, i) => ({ name, order: names.length - i, color: PALETTE[i] })) };
+}
+
+test('T1 and T2 without opts.moodScale print the demo-scale markup they printed before 4d.0.2', () => {
+  const got = {};
+  for (const width of WIDTHS) {
+    for (const variant of ['a', 'b']) {
+      got[`T1 ${variant} mood ${width}`] = t1.render(buildYearData(demoView, YEAR, 0), { variant, metric: 'mood', width });
+    }
+    got[`T1 a label ${width}`] = t1.render(buildYearData(demoView, YEAR, 0), { variant: 'a', metric: 'label', width });
+    got[`T2 ${width}`] = t2.render(buildLanesData(demoView, [0, 1]), { range: viewSettings.time.lanes.defaultRange, width });
+  }
+  const changed = Object.keys(BEFORE).filter((name) => got[name].length !== BEFORE[name][0] || fnv(got[name]) !== BEFORE[name][1]);
+  assert.deepEqual(changed, [], 'changed outputs');
+  for (const svg of Object.values(got)) assert.ok(!svg.includes('style="fill'), 'no style fill without the scale');
+});
+
+test('T1 with opts.moodScale: names as text in the key, stored colours on the days, null days keep class bin-0', () => {
+  const settings = scaleOf(viewSettings.time.moodNames);
+  const view = toViewData(exported, settings, explore);
+  const scale = moodScale(settings);
+  const data = buildYearData(view, YEAR, 0);
+  const svg = t1.render(data, { variant: 'a', metric: 'mood', width: 900, moodScale: scale });
+  const failures = [];
+  for (const e of scale) {
+    if (!svg.includes(`>${e.name}</text>`)) failures.push(`name ${e.name} is not text in the key`);
+  }
+  const filled = (svg.match(/style="fill: #/g) || []).length;
+  const withMood = data.days.filter((d) => d.mood !== null).length;
+  if (filled !== withMood + scale.length) failures.push(`${filled} filled shapes, expected ${withMood} days and ${scale.length} swatches`);
+  const nullDays = data.days.filter((d) => d.mood === null).length;
+  const nullClass = (svg.match(/class="bin-0"/g) || []).length;
+  if (nullClass !== nullDays) failures.push(`${nullClass} null cells, expected ${nullDays}`);
+  if (/undefined|NaN/.test(svg)) failures.push('undefined or NaN in the markup');
+  assert.deepEqual(failures, [], 'T1 with the scale');
+});
+
+test('T2 with opts.moodScale: the band takes stored colours, names as text under the axis', () => {
+  const settings = scaleOf(viewSettings.time.moodNames);
+  const scale = moodScale(settings);
+  const view = toViewData(exported, settings, explore);
+  const svg = t2.render(buildLanesData(view, [0, 1]), { range: viewSettings.time.lanes.defaultRange, width: 900, moodScale: scale });
+  const failures = [];
+  for (const e of scale) {
+    if (!svg.includes(`>${e.name}</text>`)) failures.push(`name ${e.name} is not text`);
+  }
+  const stored = new Set(scale.map((e) => e.color));
+  for (const m of svg.matchAll(/style="fill: (#[0-9a-fA-F]{6})"/g)) {
+    if (!stored.has(m[1])) failures.push(`colour ${m[1]} is not a stored colour`);
+  }
+  assert.deepEqual(failures, [], 'T2 with the scale');
+});
+
+test('mood names with markup characters are escaped in the key', () => {
+  const settings = scaleOf(['<i>bad</i>', 'low', 'okay', 'good', 'great']);
+  const svg = t1.render(buildYearData(toViewData(exported, settings, explore), YEAR, 0), { variant: 'a', metric: 'mood', width: 900, moodScale: moodScale(settings) });
+  assert.ok(svg.includes('&lt;i&gt;bad&lt;/i&gt;'), 'escaped name');
+  assert.ok(!svg.includes('<i>'), 'no raw markup');
+});
+
+// Every <text> as an estimated box (core/textfit.js) and the viewBox size of its svg.
+function boxesOf(svg) {
+  const [, width, height] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  const boxes = [];
+  const re = /<text x="([^"]*)" y="([^"]*)" dy="[^"]*" class="[^"]*" text-anchor="([^"]*)" font-size="([^"]*)">([\s\S]*?)<\/text>/g;
+  for (const m of svg.matchAll(re)) {
+    boxes.push({ text: m[5], box: textBox(Number(m[1]), Number(m[2]), m[5], Number(m[4]), m[3]) });
+  }
+  return { width: Number(width), height: Number(height), boxes };
+}
+
+test('T1 and T2 with a 5-entry scale and a long mood name: every text inside its view at 320 and 900 px', () => {
+  const settings = scaleOf(['a long mood name that has to wrap over several lines', 'low', 'okay', 'good', 'great']);
+  const scale = moodScale(settings);
+  const view = toViewData(exported, settings, explore);
+  const failures = [];
+  for (const width of WIDTHS) {
+    const svgs = {
+      'T1 a': t1.render(buildYearData(view, YEAR, 0), { variant: 'a', metric: 'mood', width, moodScale: scale }),
+      'T1 b': t1.render(buildYearData(view, YEAR, 0), { variant: 'b', metric: 'mood', width, moodScale: scale }),
+      T2: t2.render(buildLanesData(view, [0, 1]), { range: viewSettings.time.lanes.defaultRange, width, moodScale: scale }),
+    };
+    for (const [name, svg] of Object.entries(svgs)) {
+      const { width: w, height: h, boxes } = boxesOf(svg);
+      for (const { text, box } of boxes) {
+        if (!insideView(box, w, h)) failures.push(`${name} at ${width}: "${text}" outside the view`);
+      }
+    }
+  }
+  assert.deepEqual(failures, [], 'text outside the view');
 });

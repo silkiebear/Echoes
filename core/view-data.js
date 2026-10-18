@@ -13,9 +13,30 @@
 // whole score; a day with no scored mood is null (drawn as its own class by the views, see diverge.js moodBin).
 import { weekdayOf } from './calendar.js';
 import { moodScore } from './mood.js';
+import { explore } from '../config/explore.js';
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
 
 function meanOf(values) {
   return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+export function isHexColour(value) {
+  return typeof value === 'string' && HEX.test(value);
+}
+
+// The settings' moods as a scale for the views (4d.0.2): one entry per mood, worst first, so score 1 is the worst
+// (score = n - order + 1, SPEC 12). Names and colours are copied; a colour that is not #rrggbb gets the fallback.
+export function moodScale(settings) {
+  const moods = Array.isArray(settings?.moods) ? settings.moods : [];
+  const n = moods.length;
+  return moods
+    .map((m) => ({
+      score: n - m.order + 1,
+      name: String(m.name),
+      color: isHexColour(m.color) ? m.color : explore.mood.fallbackColor,
+    }))
+    .sort((a, b) => a.score - b.score);
 }
 
 function dayMoods(data, settings) {

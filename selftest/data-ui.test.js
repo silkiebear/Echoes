@@ -74,7 +74,9 @@ if (typeof document === 'undefined') {
     assert.equal(failures.length, 0, failures.slice(0, 10).join('; '));
   });
 
-  test('Q2 with 300 labels shows 200 rows and "showing 200 of 300"', () => {
+  // The store notifies the live Explore cards synchronously. With a label selected there, T4 reads the empty days set
+  // below and throws (phase 4d, 4d.0.1), so this check clears the selection and restores it afterwards.
+  function q2ManyLabels() {
     const before = { ...store.get() };
     const card = document.createElement('section');
     card.className = 'card';
@@ -82,13 +84,25 @@ if (typeof document === 'undefined') {
     document.body.append(card);
     try {
       const labels = Array.from({ length: 300 }, (_, id) => ({ id, text: `Label ${id} S${id % 2 ? '+' : '-'}` }));
-      store.set({ data: { labels, entries: [], days: [], moodNames: [] }, settings: before.settings });
+      store.set({ data: { labels, entries: [], days: [], moodNames: [] }, selection: [], settings: before.settings });
       q2LabelCoding.mount(card, { diag });
       assert.equal(card.querySelectorAll('li').length, 200, 'rows shown');
       assert.ok(card.textContent.includes('showing 200 of 300'), 'showing line present');
     } finally {
       card.remove();
-      store.set({ data: before.data, parseStats: before.parseStats, settings: before.settings });
+      store.set({ data: before.data, parseStats: before.parseStats, selection: before.selection, settings: before.settings });
+    }
+  }
+
+  test('Q2 with 300 labels shows 200 rows and "showing 200 of 300"', q2ManyLabels);
+
+  test('Q2 with 300 labels passes while the live store holds a selection (guard for 4d.0.1)', () => {
+    const saved = store.get().selection;
+    try {
+      store.set({ selection: [0, 1] });
+      q2ManyLabels();
+    } finally {
+      store.set({ selection: saved });
     }
   });
 

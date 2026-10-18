@@ -1,0 +1,91 @@
+// Explore: the E views on real data at 320 px, dark and light (browser only; phase 4d, 4d.4). The synthetic export goes
+// through the same parse path as a real load and the Echo scan runs on it; the store (data, parse stats, selection, pair,
+// scan result, settings) is restored afterwards. Checks: each card draws SVG, no sideways scroll, no black default fill,
+// and the E2 pair (lag rates and band) takes less than the limit in the browser.
+import { test, skip, assert } from '../core/harness.js';
+import * as store from '../core/store.js';
+import { exportText } from '../core/synth-export.js';
+import { parseExport } from '../core/export-parse.js';
+import { defaultSettings } from '../core/settings.js';
+import { prepare } from '../core/stats/prepare.js';
+import { runScan } from '../core/stats/run.js';
+import { stats } from '../config/stats.js';
+import { viewSettings } from '../config/views.js';
+import { synth as synthConfig } from '../config/synth.js';
+import { parser } from '../config/parser.js';
+import { buildE2Real } from '../core/echo-real.js';
+import exploreEchoModule from '../modules/explore-echo.js';
+
+const WIDTH = 320;
+const BLACK = 'rgb(0, 0, 0)';
+// Phase 4d limit for one E2 pair in the browser (phase4d.md, 4d.4.5).
+const E2_LIMIT_MS = 2000;
+const EVENT_TEXT = 'Late coffee F-';
+const OUTCOME_TEXT = 'Poor sleep S-';
+
+if (typeof document === 'undefined') {
+  skip('E views on real data at 320 px: cards, no sideways scroll, no black fill, E2 within the limit; store restored', 'browser only');
+} else {
+  test('E views on real data at 320 px: three cards with SVG, no sideways scroll, no black fill, E2 within the limit; store restored', async () => {
+    const saved = {
+      data: store.get().data,
+      parseStats: store.get().parseStats,
+      selection: store.get().selection,
+      pair: store.get().pair,
+      scanResult: store.get().scanResult,
+      settings: store.get().settings,
+    };
+    const original = document.documentElement.getAttribute('data-theme');
+    const host = document.createElement('section');
+    host.style.width = `${WIDTH}px`;
+    document.body.append(host);
+    const failures = [];
+    try {
+      const parsed = parseExport(exportText(synthConfig, {}), parser).data;
+      const settings = defaultSettings();
+      const scan = await runScan({ data: parsed, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
+      const event = parsed.labels.find((l) => l.text === EVENT_TEXT).id;
+      const outcome = parsed.labels.find((l) => l.text === OUTCOME_TEXT).id;
+      store.set({
+        data: parsed,
+        parseStats: null,
+        selection: [event, outcome],
+        pair: { window: '1d' },
+        scanResult: { rows: scan.rows, meta: scan.meta, data: parsed, settings },
+        settings,
+      });
+      exploreEchoModule.mount(host, {});
+      const cards = [...host.querySelectorAll('section.card')];
+      if (cards.length !== 3) failures.push(`${cards.length} E cards, expected 3`);
+      for (const theme of ['dark', 'light']) {
+        if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', 'light');
+        if (host.scrollWidth > host.clientWidth) failures.push(`${theme}: sideways scroll ${host.scrollWidth} > ${host.clientWidth}`);
+        for (const card of cards) {
+          const name = card.querySelector('h2').textContent;
+          const svg = card.querySelector('svg');
+          if (!svg) {
+            failures.push(`${theme}: ${name} drew no SVG`);
+            continue;
+          }
+          const black = [...svg.querySelectorAll('rect, path, polygon, circle')].filter((n) => getComputedStyle(n).fill === BLACK).length;
+          if (black > 0) failures.push(`${theme}: ${name} has ${black} shapes with the black default fill`);
+        }
+      }
+      if (!cards.some((c) => c.innerHTML.includes('placebo'))) failures.push('E2 caption (placebo band) is missing');
+      const started = performance.now();
+      const prepared = prepare({ data: parsed, settings });
+      buildE2Real(prepared, event, outcome, {
+        days: viewSettings.curve.days, shuffles: stats.placebo.shuffles.fast, seed: stats.placebo.seed, labels: parsed.labels, statsCfg: stats,
+      });
+      const ms = performance.now() - started;
+      if (ms >= E2_LIMIT_MS) failures.push(`E2 pair took ${Math.round(ms)} ms, limit ${E2_LIMIT_MS}`);
+    } finally {
+      host.remove();
+      store.set(saved);
+      if (original === null) document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', original);
+    }
+    assert.equal(failures.length, 0, failures.join('; '));
+  });
+}

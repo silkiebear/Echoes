@@ -10,6 +10,9 @@ export const statsShared = {
   levels: { high: 1, low: 0.5 },
   // Probability that the level stays the same from one day to the next. The chain starts in the high level.
   pStay: 0.9,
+  // Phase 4d, G7b (mode 'shared-half'): the share of labels the shared factor acts on. A random half, so label count
+  // (the logging-volume measure) is only a partial proxy for the factor.
+  halfShare: 0.5,
   // Weekly cycle: the first floor(share x count) labels get an amplitude and a phase; the others get none.
   weekly: {
     share: 0.5,

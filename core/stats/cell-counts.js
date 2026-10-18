@@ -116,3 +116,76 @@ export function restrictedCell(p, e, masks, pre, geo) {
   }
   return { N, K, n, k, strata };
 }
+
+// Per-stratum totals of one (outcome, window) pair over the whole series (phase 4d, option B). A block that lies fully
+// inside an active period takes these totals; the two edge blocks are counted day by day.
+export function bandTotals(p, masks, geo) {
+  const totN = new Int32Array(geo.count);
+  const totK = new Int32Array(geo.count);
+  if (geo.base < 0) return { totN, totK };
+  for (let t = geo.base; t < p.n; t += 1) {
+    if (!masks.evaluable[t]) continue;
+    const s = geo.index[t];
+    totN[s] += 1;
+    if (masks.hit[t]) totK[s] += 1;
+  }
+  return { totN, totK };
+}
+
+// Restricted cell with logging-volume bands (phase 4d, option B). The same counts as restrictedCell, split by the band
+// of each day: strata are blocks times bands, so a block's band s is block * bands + band.
+export function restrictedCellBanded(p, e, masks, totals, geo) {
+  const { ns, ks, NN, KK } = geo.scratch;
+  const { bands, base, days } = geo;
+  const a = p.first[e];
+  const b = p.last[e];
+  const blockLo = Math.floor((a - base) / days);
+  const blockHi = Math.floor((b - base) / days);
+  const sLo = blockLo * bands;
+  const sHi = (blockHi + 1) * bands - 1;
+  for (let s = sLo; s <= sHi; s += 1) {
+    NN[s] = 0;
+    KK[s] = 0;
+    ns[s] = 0;
+    ks[s] = 0;
+  }
+  for (let bl = blockLo; bl <= blockHi; bl += 1) {
+    const start = base + bl * days;
+    const end = start + days - 1;
+    if (start >= a && end <= b) {
+      for (let q = 0; q < bands; q += 1) {
+        NN[bl * bands + q] = totals.totN[bl * bands + q];
+        KK[bl * bands + q] = totals.totK[bl * bands + q];
+      }
+    } else {
+      const r1 = Math.min(b, end, p.n - 1);
+      for (let t = Math.max(a, start); t <= r1; t += 1) {
+        if (!masks.evaluable[t]) continue;
+        const s = geo.index[t];
+        NN[s] += 1;
+        if (masks.hit[t]) KK[s] += 1;
+      }
+    }
+  }
+  let n = 0;
+  let k = 0;
+  for (const d of p.labelDays[e]) {
+    if (!masks.evaluable[d]) continue;
+    const s = geo.index[d];
+    ns[s] += 1;
+    n += 1;
+    if (masks.hit[d]) {
+      ks[s] += 1;
+      k += 1;
+    }
+  }
+  let N = 0;
+  let K = 0;
+  const strata = [];
+  for (let s = sLo; s <= sHi; s += 1) {
+    N += NN[s];
+    K += KK[s];
+    if (ns[s] > 0) strata.push({ N: NN[s], K: KK[s], n: ns[s], k: ks[s] });
+  }
+  return { N, K, n, k, strata };
+}

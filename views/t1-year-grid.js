@@ -2,11 +2,13 @@
 // row is the position in the week (0 = time.weekStart), firstRow is the row of 1 January.
 // opts.variant: 'a' columns = weeks, rows = weekdays; 'b' rows = months, columns = days 1 to 31.
 // opts.metric: 'mood' (five steps on the colour bins) or 'label' (present or absent). opts.width: available CSS px.
+// opts.moodScale (optional, 4d.0.2): a settings scale from core/view-data.js moodScale; the day colours and the key then
+// use the stored colours and names. Without it the output is the demo scale, unchanged.
 // The grid scrolls inside its card when the cells reach cellMin. Zoom comes from the gallery (attachZoom).
 // Decade-to-day levels are deferred: not in this phase.
 import { svgDoc, svgText } from '../core/svg.js';
 import { viewSettings } from '../config/views.js';
-import { moodBin, presenceBin, moodLegend, keyRow } from './diverge.js';
+import { moodBin, presenceBin, moodLegend, keyRow, scaleFill, scaleLegend } from './diverge.js';
 import { monthShort } from '../core/time-demo.js';
 import { weekdayLabels } from '../core/calendar.js';
 
@@ -27,11 +29,18 @@ function binOf(day, metric) {
   return metric === 'label' ? presenceBin(day.present) : moodBin(day.mood);
 }
 
-function cell(x, y, size, bin) {
-  return `<rect class="bin-${bin}" x="${x}" y="${y}" width="${size}" height="${size}" rx="2"/>`;
+// A settings scale (4d.0.2) gives a mood day its stored colour; a null day keeps the null class, as in the demo scale.
+function paintOf(day, metric, scale) {
+  if (scale && metric !== 'label' && day.mood !== null && day.mood !== undefined) return { fill: scaleFill(day.mood, scale) };
+  return { bin: binOf(day, metric) };
 }
 
-function weeksGrid(data, metric, available) {
+function cell(x, y, size, paint) {
+  const attr = paint.fill === undefined ? `class="bin-${paint.bin}"` : `style="fill: ${paint.fill}"`;
+  return `<rect ${attr} x="${x}" y="${y}" width="${size}" height="${size}" rx="2"/>`;
+}
+
+function weeksGrid(data, metric, available, scale) {
   const cols = Math.ceil((data.days.length + data.firstRow) / WEEKS);
   const size = fitCell(available, cols, g.cellMin);
   const pitch = size + g.gap;
@@ -50,12 +59,12 @@ function weeksGrid(data, metric, available) {
   }
   for (const d of data.days) {
     const col = Math.floor((d.index + data.firstRow) / WEEKS);
-    body += cell(x0 + col * pitch, y0 + d.row * pitch, size, binOf(d, metric));
+    body += cell(x0 + col * pitch, y0 + d.row * pitch, size, paintOf(d, metric, scale));
   }
   return { body, gridWidth: x0 + cols * pitch - g.gap + t.pad, gridHeight: y0 + WEEKS * pitch - g.gap };
 }
 
-function monthsGrid(data, metric, available) {
+function monthsGrid(data, metric, available, scale) {
   const size = fitCell(available, MAX_DAYS, g.monthCellMin);
   const pitch = size + g.gap;
   const x0 = g.gutter;
@@ -68,7 +77,7 @@ function monthsGrid(data, metric, available) {
     body += svgText(x0 - t.smallGap, y0 + m * pitch + size / 2, monthShort(m), 't-muted', 'end', small);
   }
   for (const d of data.days) {
-    body += cell(x0 + (d.dom - 1) * pitch, y0 + d.month * pitch, size, binOf(d, metric));
+    body += cell(x0 + (d.dom - 1) * pitch, y0 + d.month * pitch, size, paintOf(d, metric, scale));
   }
   return { body, gridWidth: x0 + MAX_DAYS * pitch - g.gap + t.pad, gridHeight: y0 + MONTHS * pitch - g.gap };
 }
@@ -76,11 +85,12 @@ function monthsGrid(data, metric, available) {
 function render(data, opts = {}) {
   const available = opts.width || viewSettings.defaultWidth;
   const metric = opts.metric === 'label' ? 'label' : 'mood';
-  const grid = opts.variant === 'b' ? monthsGrid(data, metric, available) : weeksGrid(data, metric, available);
+  const scale = opts.moodScale;
+  const grid = opts.variant === 'b' ? monthsGrid(data, metric, available, scale) : weeksGrid(data, metric, available, scale);
   const keyY = grid.gridHeight + t.pad;
   const key = metric === 'label'
     ? keyRow(g.gutter, keyY, [{ bin: presenceBin(0), name: 'absent' }, { bin: presenceBin(1), name: 'present' }])
-    : moodLegend(g.gutter, keyY);
+    : scale ? scaleLegend(g.gutter, keyY, scale) : moodLegend(g.gutter, keyY);
   const width = Math.max(grid.gridWidth, g.gutter + key.width + t.pad);
   const height = keyY + t.moodSwatch + t.pad;
   return svgDoc({

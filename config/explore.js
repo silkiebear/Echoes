@@ -22,6 +22,9 @@ export const explore = {
   selection: { max: 8, minChars: 2, maxResults: 40 },
   // Choice: a day's mood is the mean of its entries' scores, rounded to the nearest whole score (halves round up).
   dayMood: { rounding: 'nearest' },
+  // A stored mood colour that is not #rrggbb is drawn in this grey instead (4d.0.2). Same value as views.js
+  // fallbackColor (the M2 setup preview), kept here so the Explore views do not depend on the gallery config.
+  mood: { fallbackColor: '#9aa1b0' },
   // Placeholder drawing when a card has nothing to show yet: height, text inset and baseline in CSS px.
   chart: { messageHeight: 48, messagePad: 8, messageBaseline: 24 },
   // Choice: hour-of-day bins for the P2 dial (must divide 24; the gallery uses 24, one bin per hour).

@@ -1,16 +1,23 @@
 // T2 Lanes Timeline. Data (time-demo.js buildLanesData): { span, dates, rows: [{ id, text, present }], mood }.
 // opts.range: id from config time.lanes.ranges (the last N days; 0 = all). opts.width: available CSS px.
+// opts.moodScale (optional, 4d.0.2): a settings scale (core/view-data.js moodScale) for the band and its key.
 // When days per pixel is above 1, days are grouped into buckets of ceil(days per pixel) days. A bucket gets a tick
 // when any day in it has the label, and the mood band shows the bucket's mean mood.
 import { svgDoc, svgText } from '../core/svg.js';
 import { viewSettings } from '../config/views.js';
-import { moodBin } from './diverge.js';
+import { moodBin, scaleFill, scaleLegend } from './diverge.js';
 import { estimateWidth } from '../core/textfit.js';
 import { monthYear } from '../core/time-demo.js';
 
 const L = viewSettings.time.lanes;
 const pad = viewSettings.time.pad;
 const { fontPx, smallFontPx } = viewSettings.text;
+
+// The mood band: the demo scale's class, or with a settings scale the stored colour (a null mood keeps class bin-0).
+function bandPaint(mood, scale) {
+  if (!scale) return `class="bin-${moodBin(mood)}"`;
+  return mood === null ? 'class="bin-0"' : `style="fill: ${scaleFill(Math.round(mood), scale)}"`;
+}
 
 function rangeOf(id) {
   return L.ranges.find((r) => r.id === id) || L.ranges.find((r) => r.id === L.defaultRange);
@@ -29,6 +36,7 @@ function meanMood(data, from, to) {
 }
 
 function render(data, opts = {}) {
+  const scale = opts.moodScale;
   const range = rangeOf(opts.range);
   const span = range.days > 0 ? Math.min(range.days, data.span) : data.span;
   const first = data.span - span;
@@ -60,16 +68,26 @@ function render(data, opts = {}) {
   for (let b = 0; b < buckets; b++) {
     const from = first + b * bucket;
     const mood = meanMood(data, from, Math.min(data.span, from + bucket));
-    body += `<rect class="bin-${moodBin(mood)}" x="${x0 + b * pitch}" y="${bandTop}" width="${pitch}" height="${L.moodBandHeight}"/>`;
+    body += `<rect ${bandPaint(mood, scale)} x="${x0 + b * pitch}" y="${bandTop}" width="${pitch}" height="${L.moodBandHeight}"/>`;
   }
 
   const axisY = bandTop + L.moodBandHeight + L.axisGap + smallFontPx / 2;
   body += svgText(x0, axisY, monthYear(data.dates[first]), 't-muted', 'start', smallFontPx);
   body += svgText(x0 + plotW, axisY, monthYear(data.dates[data.span - 1]), 't-muted', 'end', smallFontPx);
 
+  // With a settings scale the band's names are printed under the axis (SPEC 12: a colour is never the only cue).
+  let key = { svg: '', width: 0 };
+  let bottom = axisY + smallFontPx / 2;
+  if (scale) {
+    const keyY = bottom + pad;
+    key = scaleLegend(x0, keyY, scale);
+    body += key.svg;
+    bottom = keyY + viewSettings.time.moodSwatch;
+  }
+
   return svgDoc({
-    width: x0 + plotW + pad,
-    height: axisY + smallFontPx / 2 + pad,
+    width: Math.max(x0 + plotW + pad, x0 + key.width + pad),
+    height: bottom + pad,
     title: 'T2 Lanes timeline',
     desc: `Selected labels as lanes over a mood band, ${range.label}, ${bucket > 1 ? `${bucket} days per bucket` : 'one tick per day'}`,
     body,
