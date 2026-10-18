@@ -30,6 +30,33 @@
   padding: 0 var(--space-1);
 }
 
+/* Label filter (4b.4): the text input and the role select are both touch height and may wrap at 320 px. */
+.scan-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-1);
+  min-width: 0;
+}
+
+.scan-filter input,
+.scan-filter select {
+  box-sizing: border-box;
+  height: var(--touch);
+  min-height: var(--touch);
+  min-width: 0;
+  padding: 0 var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.scan-filter input {
+  flex: 1 1 10rem;
+}
+
 .scan-progress {
   color: var(--text-muted);
   margin: 0 0 var(--space-2);

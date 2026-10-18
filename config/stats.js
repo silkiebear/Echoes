@@ -62,6 +62,18 @@ export const stats = {
     // Choice (3.2.4): Node-only limit for a scan of the large synthetic sample. Browser time is measured, not asserted.
     maxScanMsNode: 30000,
   },
+  // Choice (4b.3, D15): 'stratified' ranks cells by the stratified test with autocorrelation inflation (D11 to D14).
+  // 'fisher' is the phase 3 behaviour (pooled exact test, no active-period restriction, no strata); the gates compare with it.
+  scanTest: 'stratified',
+  // Choice (4b.3, D12): stratum length in calendar days, counted from the first observed day.
+  strata: { days: 30 },
+  // Choice (4b.3, D15): a cell whose summed variance is below this is untested; the normal approximation is poor for tiny counts.
+  minVariance: 2,
+  // Choice (4b.2): the normal tail uses an erf series below seriesBelow and a continued fraction of this depth above it.
+  // Numerical settings only; they do not change the statistics.
+  normal: { seriesBelow: 3, fractionTerms: 300 },
+  // Choice (4b.2, D14): the autocorrelation inflation factor is capped at max; maxRho keeps (1 + a b) / (1 - a b) finite.
+  inflation: { max: 20, maxRho: 0.99 },
   worker: {
     // Module worker script, relative to core/stats/client.js. Tests and the browser run use the same path.
     path: '../stats-worker.js',
@@ -89,6 +101,17 @@ export const stats = {
     hideFlagged: 'Hide flagged results',
     // "{shown}": rows left after hiding; "{returned}": rows the engine kept (at most keepTop).
     rowsShown: '{shown} of {returned} rows',
+    // Label filter (4b.4): applied on the next Run, after the FDR step and before the keepTop cut. Text shorter than
+    // filterMinChars (after NFC and trim) means no filter. "{filtered}": rows that match, before the cut.
+    filterMinChars: 2,
+    filter: {
+      placeholder: 'Filter by label text',
+      label: 'Label filter text',
+      roleLabel: 'Label role for the filter',
+      roles: { either: 'either label', exposure: 'exposure only', outcome: 'outcome only' },
+      help: 'The filter applies on the next Run. Rows keep their q values.',
+      matches: '{filtered} rows match the filter',
+    },
     // Shown when hiding leaves no row. It states the fact only: it does not say the results are right or wrong.
     allFlagged: 'Every returned row carries a flag, and "Hide flagged results" is on. Turn it off to see them.',
     // Card sort control (M4). Client-side only: engine order is never changed and no row is hidden.
@@ -96,6 +119,9 @@ export const stats = {
     labels: { source: 'Data source', mode: 'Scan mode', sort: 'Sort rows' },
     summary: {
       cells: 'Cells tested',
+      // "family: <m> cells": the multiple-testing family (every tested cell, before any filter).
+      family: 'family',
+      familyUnit: 'cells',
       discoveries: 'Discoveries',
       longRuns: 'with long-run labels',
       withoutLongRuns: 'without long-run labels',
@@ -104,14 +130,14 @@ export const stats = {
     },
     error: 'Scan failed.',
     longRunPill: 'long-run labels',
-    longRunNote: 'Discoveries with long-run labels are not valid evidence: their p-values assume independent days.',
+    longRunNote: 'Discoveries with long-run labels: q is adjusted for lag-1 autocorrelation, a first-order correction. Very long runs lower the power of the test. The adjustment does not show that a result is right.',
     // Item layout: head "#rank exposure → outcome · window"; metrics line; pill line.
     rankPrefix: '#',
     arrow: ' → ',
     sep: ' · ',
     none: '—',
     na: 'n/a',
-    metricNames: { rr: 'rate ratio', diff: 'difference', n: 'n', q: 'q', placebo: 'placebo p' },
+    metricNames: { rr: 'rate ratio, adjusted', diff: 'difference', n: 'n', q: 'q', placebo: 'placebo p' },
     // Help under the sort control. Both orders keep every row; the order can look the same when the top rows have placebo p values.
     sortHelp: 'Placebo-evaluated first puts rows that had a shift placebo before the rest; both orders keep every row.',
     // Digits for p and q. Values below pSciBelow print in scientific notation, so 5e-44 is not shown as 0.

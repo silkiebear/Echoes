@@ -154,6 +154,39 @@ if (typeof document === 'undefined') {
     assert.ok(failures.length === 0, failures.join('; '));
   });
 
+  test('label filter at 320 px: text input and role select are 44 px or taller in both themes, no sideways scroll', () => {
+    const ui = stats.ui;
+    const original = document.documentElement.getAttribute('data-theme');
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.style.width = `${WIDTH}px`;
+    document.body.append(card);
+    const failures = [];
+    try {
+      echoScan.mount(card, { diag });
+      const input = card.querySelector(`.scan-filter input[aria-label="${ui.filter.label}"]`);
+      const role = card.querySelector(`.scan-filter select[aria-label="${ui.filter.roleLabel}"]`);
+      if (!input || !role) {
+        failures.push('filter controls missing');
+      } else {
+        for (const theme of ['dark', 'light']) {
+          if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+          else document.documentElement.setAttribute('data-theme', 'light');
+          if (card.scrollWidth > card.clientWidth) failures.push(`${theme}: card scrolls sideways`);
+          for (const target of [input, role]) {
+            const height = parseFloat(getComputedStyle(target).height);
+            if (!(height >= MIN_TARGET)) failures.push(`${theme}: ${target.tagName} is ${height} px tall`);
+          }
+        }
+      }
+    } finally {
+      card.remove();
+      if (original === null) document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', original);
+    }
+    assert.ok(failures.length === 0, failures.join('; '));
+  });
+
   test('echo scan card: Show more and Show less, hide flagged removes flagged rows, targets are 44 px', async () => {
     const ui = stats.ui;
     const card = document.createElement('section');

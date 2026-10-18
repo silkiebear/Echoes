@@ -49,9 +49,11 @@ test('toy 1: exposure on 1, 4, 7 and outcome on 2, 3, 5, 8 at window 2 gives (2,
   expectNear(fisherTwoSided(c.k, c.n, m.K, m.N), 1, 'two-sided p');
 });
 
+// Phase 3 counts and p (the fisher path): the stratified default restricts the counts to the active period and
+// leaves a cell with a variance below minVariance untested, so this count check pins scanTest to 'fisher'.
 test('toy 1 through scanCells: the same cell is tested with the same counts', async () => {
   const p = prepare({ data: toyData([1, 4, 7], [2, 3, 5, 8]), settings: defaultSettings() });
-  const cfg = { ...stats, windows: [{ id: 'w2', days: 2 }], minExposed: 1 };
+  const cfg = { ...stats, windows: [{ id: 'w2', days: 2 }], minExposed: 1, scanTest: 'fisher' };
   const cells = [];
   await scanCells(p, cfg, { onCell: (c) => cells.push(c) });
   const cell = cells.find((c) => c.e === 0 && c.o === 1);

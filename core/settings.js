@@ -16,7 +16,7 @@ function isPlain(value) {
 function defaultSettings() {
   return {
     version: cfg.version,
-    moods: [],
+    moods: cfg.moodPresets.map((m) => ({ name: m.name, order: m.order, color: m.color })),
     categories: cfg.categories.map((c) => ({ code: c.code, name: c.name, color: c.color })),
     groups: [],
     customAnalyses: [],
@@ -77,7 +77,10 @@ function validateSettings(obj) {
           valid.push({ name: name.trim(), order, color });
         }
       });
-      settings.moods = valid;
+      // A list with no valid entry (including an old cached []) keeps the presets, so the score scale stays n = 5.
+      if (valid.length > 0) {
+        settings.moods = valid;
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 // Planted-effect tests on the synthetic wide sample (default config). Ranges are the 3-standard-deviation analytic
 // limits written before any run; they are not edited after a measurement. Plant label ids: 0/1 up, 2/3 down, 4/5 late,
 // 6/7 streaks A and B, 8 onward fillers.
-import { test, assert } from '../core/harness.js';
+import { test, assert, skip } from '../core/harness.js';
 import { runScan } from '../core/stats/run.js';
 import { prepare } from '../core/stats/prepare.js';
 import { outcomeMasks, exposedCounts } from '../core/stats/cell-counts.js';
@@ -77,17 +77,34 @@ test('P3 the top row by q is an up or down plant pair; no streak or filler pair 
   assert.ok(pairs.some(([x, y]) => top.exposure === x && top.outcome === y), `top row is ${top.exposure} to ${top.outcome}`);
 });
 
+// P3 at scale (phase 4b, tier 4b.3; Node only). Derivation, written before the run: planted q is about 1e-44 for the
+// up pair and 1e-14 for the down pair at 1 day; a null cell cannot reach p below about 1e-7 among about 3 million tests.
+// So the up pair must be row 1 by q, and the down pair must be within the first 40 rows. The real positions are printed.
+if (typeof window === 'undefined') {
+  test('P3 at 900 fillers (Node): the up pair at 1 day is row 1 by q; the down pair at 1 day is within the first 40 rows', async () => {
+    const data = generateWide(statsSynth, statsSynth.seed, statsSynth.fillerCountLarge);
+    const result = await runScan({ data, settings: defaultSettings() }, { mode: 'fast' }, {});
+    const position = (x, y) => result.rows.findIndex((r) => r.exposure === x && r.outcome === y && r.window === '1d') + 1;
+    const upPos = position(UP_X, UP_Y);
+    const downPos = position(DOWN_X, DOWN_Y);
+    console.log(`P3 900 fillers: up pair at 1 day row ${upPos}; down pair at 1 day row ${downPos}`);
+    assert.ok(upPos === 1, `up pair row ${upPos}`);
+    assert.ok(downPos >= 1 && downPos <= 40, `down pair row ${downPos}`);
+  });
+} else {
+  skip('P3 at 900 fillers (Node): the up pair at 1 day is row 1 by q; the down pair at 1 day is within the first 40 rows', 'Node only');
+}
+
 // Null calibration. Amended by the user (phase 3, M1) after the measurement in notes\phase3.md section 9: the original
 // rule (filler q count at most 5) assumed uniform null p-values and measured 9 at the default seed.
 // Derivation, written before the amended run: filler pairs are the only true nulls here. BH bounds the expected share
 // of false discoveries by alpha under independence or positive dependence, so the mean over seeds of (filler
 // discoveries / all discoveries) should stay at or below 0.05. Caveat, not checked: streak-to-filler cells are nulls
 // too, but this rule counts only filler pairs. The sensitivity line prints the share with every non-plant cell counted.
-const P4_SEEDS = 10;
-const P4_MEAN_MAX = 0.05;
 const P4_SHARE_MAX = 0.08;
 const fillerPair = (c) => c.e >= FILLER_FIRST && c.o >= FILLER_FIRST;
-const isPlant = (id) => id <= LATE_Y;
+const PLANTED_PAIRS = [[UP_X, UP_Y], [DOWN_X, DOWN_Y], [LATE_X, LATE_Y]];
+const isPlantedPair = (c) => PLANTED_PAIRS.some(([x, y]) => c.e === x && c.o === y);
 
 // Every tested cell gets its p (not only the kept ones), and q comes from the full family.
 async function nullCells(seed) {
@@ -99,30 +116,36 @@ async function nullCells(seed) {
   return cells.map((c, i) => ({ c, q: qs[i] }));
 }
 
-test('P4 null calibration: default seed filler pairs with p below 0.05 at most 8 percent; mean over 10 seeds of the filler share of discoveries at most 5 percent', async () => {
+test('P4 null calibration (a): default seed filler pairs with p below 0.05 at most 8 percent', async () => {
   const first = await nullCells(statsSynth.seed);
   const filler = first.filter(({ c }) => fillerPair(c));
   const pShare = filler.filter(({ c }) => c.p < ALPHA).length / filler.length;
+  console.log(`P4 (a) filler pair share with p below 0.05: ${pShare.toFixed(4)}`);
   assert.ok(pShare <= P4_SHARE_MAX, `share ${pShare}`);
+});
+
+// G6 (phase 4b, tier 4b.3; replaces the amended P4 (b)). Limits and derivation, written before the first run:
+// for 10 seeds (statsSynth.seed + i, 300 fillers, the default scan), a discovery (BH q below alpha over every tested
+// cell) is TRUE only when it is a planted pair in the planted direction (up, down or late, any window); every other
+// discovery is FALSE. Seeds without discoveries are skipped and counted. Assert: the mean over seeds of
+// (false / all discoveries) is at most 0.10. Derivation: BH at alpha 0.05 gives an expected false share of about 0.05
+// for independent tests; 0.10 allows for dependence between cells that share a label.
+const G6_SEEDS = 10;
+const G6_MEAN_MAX = 0.10;
+test('G6 false share of discoveries on the wide sample: mean over 10 seeds at most 10 percent', async () => {
   const perSeed = [];
-  for (let i = 0; i < P4_SEEDS; i += 1) {
-    const cells = i === 0 ? first : await nullCells(statsSynth.seed + i);
+  for (let i = 0; i < G6_SEEDS; i += 1) {
+    const cells = await nullCells(statsSynth.seed + i);
     const disc = cells.filter(({ q }) => q < ALPHA);
-    perSeed.push({
-      fillerDisc: disc.filter(({ c }) => fillerPair(c)).length,
-      all: disc.length,
-      nonPlantDisc: disc.filter(({ c }) => !isPlant(c.e) && !isPlant(c.o)).length,
-    });
+    perSeed.push({ all: disc.length, falseCount: disc.filter(({ c }) => !isPlantedPair(c)).length });
   }
   const used = perSeed.filter((s) => s.all > 0);
-  const mean = used.reduce((sum, s) => sum + s.fillerDisc / s.all, 0) / used.length;
-  const sensitivity = used.reduce((sum, s) => sum + s.nonPlantDisc / s.all, 0) / used.length;
-  console.log(`P4 filler discoveries per seed: ${perSeed.map((s) => s.fillerDisc).join(', ')}`);
-  console.log(`P4 all discoveries per seed: ${perSeed.map((s) => s.all).join(', ')}`);
-  console.log(`P4 seeds skipped (no discoveries): ${P4_SEEDS - used.length}; mean filler share ${mean.toFixed(4)}`);
-  console.log(`P4 sensitivity (not asserted): mean share with every non-plant cell counted ${sensitivity.toFixed(4)}`);
+  const mean = used.reduce((sum, s) => sum + s.falseCount / s.all, 0) / used.length;
+  console.log(`G6 all discoveries per seed: ${perSeed.map((s) => s.all).join(', ')}`);
+  console.log(`G6 false discoveries per seed: ${perSeed.map((s) => s.falseCount).join(', ')}`);
+  console.log(`G6 seeds skipped (no discoveries): ${G6_SEEDS - used.length}; mean false share ${mean.toFixed(4)}`);
   assert.ok(used.length > 0, 'no seed with discoveries');
-  assert.ok(mean <= P4_MEAN_MAX, `mean filler share ${mean}`);
+  assert.ok(mean <= G6_MEAN_MAX, `mean false share ${mean}`);
 });
 
 test('P5 shift placebo for up X to up Y at 1 day with fast shuffles: placeboP at most 0.01', async () => {
@@ -132,9 +155,16 @@ test('P5 shift placebo for up X to up Y at 1 day with fast shuffles: placeboP at
 });
 
 // Autocorrelation trap: streak series are long runs, so the independence (exact) test over-rejects.
-test('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent, analytic rejects more', () => {
+// G2 (phase 4b, tier 4b.3; replaces "analytic above placebo"). Limit and derivation, written before the first run:
+// Streak A and Streak B share no effect, so a valid test rejects at the nominal 0.05. Over 40 seeds P(7 or more
+// rejections) = 0.0034 at 0.05, so the limit 0.15 (at most 6 of 40) has a false-fail rate of about 0.3 percent under a
+// valid test. The stratified test (with the autocorrelation inflation) must meet it; the phase 3 Fisher rate (0.625)
+// is printed for comparison only. The cell is taken from the full scan; an untested cell counts as no rejection.
+test('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent; the stratified test rejects at most 15 percent', async () => {
   let placeboRejects = 0;
-  let analyticRejects = 0;
+  let stratRejects = 0;
+  let fisherRejects = 0;
+  const w1 = windows.findIndex((w) => w.id === '1w');
   for (let i = 0; i < SEEDS_P6; i += 1) {
     const seed = stats.placebo.seed + i;
     const data = generateWide(statsSynth, statsSynth.seed + i, FILLERS_P6);
@@ -144,14 +174,18 @@ test('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent
     const rr = rateStats(c.k, c.n, m.K, m.N).rr;
     const pv = fisherTwoSided(c.k, c.n, m.K, m.N);
     const plc = placeboForCell(p, STREAK_A, m, rr, stats.placebo.shuffles.fast, mulberry32(seed), stats.placebo.minShiftDays);
+    const cells = [];
+    await scanCells(p, { ...stats, windows }, { onCell: (cell) => cells.push(cell) });
+    const cell = cells.find((x) => x.e === STREAK_A && x.o === STREAK_B && x.wi === w1);
     if (plc.placeboP !== null && plc.placeboP < ALPHA) placeboRejects += 1;
-    if (pv < ALPHA) analyticRejects += 1;
+    if (cell && cell.p < ALPHA) stratRejects += 1;
+    if (pv < ALPHA) fisherRejects += 1;
   }
   const placeboRate = placeboRejects / SEEDS_P6;
-  const analyticRate = analyticRejects / SEEDS_P6;
-  console.log(`P6 placebo rejection ${placeboRate} (${placeboRejects} of ${SEEDS_P6}), analytic rejection ${analyticRate} (${analyticRejects})`);
+  const stratRate = stratRejects / SEEDS_P6;
+  console.log(`P6 placebo rejection ${placeboRate} (${placeboRejects} of ${SEEDS_P6}); stratified rejection ${stratRate} (${stratRejects}); fisher rejection ${fisherRejects / SEEDS_P6} (${fisherRejects})`);
   assert.ok(placeboRate <= 0.15, `placebo rate ${placeboRate}`);
-  assert.ok(analyticRate > placeboRate, `analytic ${analyticRate} not above placebo ${placeboRate}`);
+  assert.ok(stratRate <= 0.15, `stratified rate ${stratRate}`);
 });
 
 test('P7 late plant at 1 day: time split fails on at least 85 percent of 20 seeds', () => {

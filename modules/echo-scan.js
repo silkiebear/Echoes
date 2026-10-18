@@ -11,6 +11,8 @@ import { statsSynth } from '../config/stats-synth.js';
 import { viewSettings } from '../config/views.js';
 import * as store from '../core/store.js';
 import { checkToggle } from '../core/gallery-kit.js';
+import { filterControls } from '../core/scan-filter-ui.js';
+import { normalizeFilter } from '../core/stats/label-filter.js';
 
 const ui = stats.ui;
 const PERCENT = 100;
@@ -60,6 +62,7 @@ function summaryText(meta) {
     + `(${s.longRuns}: ${formatNumber(meta.discoveriesLongRuns)}, ${s.withoutLongRuns}: ${formatNumber(meta.discoveries - meta.discoveriesLongRuns)})`;
   return [
     `${s.cells}: ${formatNumber(meta.cellsTested)}`,
+    `${s.family}: ${formatNumber(meta.family)} ${s.familyUnit}`,
     discoveries,
     `${formatNumber(meta.ms)} ${s.ms}`,
     `${s.runner}: ${meta.runner}`,
@@ -98,7 +101,7 @@ function itemEl({ row, rank }, names) {
   const head = el('p', 'scan-item-head', `${ui.rankPrefix}${rank}${ui.sep}${exposure}${ui.arrow}${outcome}${ui.sep}${windowText(row.window)}`);
   const m = ui.metricNames;
   const metrics = el('p', 'scan-item-metrics', [
-    `${m.rr} ${formatRatio(row.rr)}`,
+    `${m.rr} ${formatRatio(row.rrAdj)}`,
     `${m.diff} ${formatNumber(row.diff, diffDigits)}`,
     `${m.n} ${formatNumber(row.n)}`,
     `${m.q} ${formatP(row.q)}`,
@@ -132,13 +135,15 @@ export default {
     const controls = el('div', 'scan-row');
     controls.append(sourceSel, modeSel, runBtn, cancelBtn, sortSel);
     const sortHelp = el('p', 'scan-help', ui.sortHelp);
+    const filterCtl = filterControls(ui.filter);
+    const filterHelp = el('p', 'scan-help', ui.filter.help);
     let hideFlagged = false; // display filter; not reset by a new run
     const hideToggle = checkToggle(ui.hideFlagged, (checked) => {
       hideFlagged = checked;
       renderResult();
     });
     const box = el('div', 'scan-box');
-    box.append(controls, hideToggle, sortHelp, progress);
+    box.append(controls, filterCtl.node, filterHelp, hideToggle, sortHelp, progress);
     const result = el('div', 'scan-result');
     container.append(box, result);
 
@@ -162,6 +167,7 @@ export default {
         return;
       }
       result.append(el('p', 'scan-note', summaryText(meta)));
+      if (meta.filtered !== null) result.append(el('p', 'scan-note', fill(ui.filter.matches, { filtered: meta.filtered })));
       for (const notice of notices) result.append(el('p', 'scan-notice', pillText(notice)));
       if (meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
 
@@ -219,11 +225,14 @@ export default {
       if (source === 'loaded') {
         for (const label of input.data.labels) diag.register(label.text, 'label');
       }
+      // The filter text is user input: register it so diagnostics redact it; the engine never logs it.
+      const labelFilter = filterCtl.read();
+      if (normalizeFilter(labelFilter, ui.filterMinChars)) diag.register(labelFilter.text, 'label');
       result.replaceChildren();
       progress.textContent = ui.running;
       runBtn.disabled = true;
       cancelBtn.disabled = false;
-      scan = startScan(input, { mode: modeSel.value }, { progress: onProgress });
+      scan = startScan(input, { mode: modeSel.value, labelFilter }, { progress: onProgress });
       const out = await scan.done;
       scan = null;
       runBtn.disabled = false;

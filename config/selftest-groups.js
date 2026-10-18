@@ -17,6 +17,11 @@ export const groups = [
       './selftest/stats-flags.test.js',
       './selftest/stats-placebo.test.js',
       './selftest/stats-toy.test.js',
+      './selftest/synth-drift.test.js',
+      './selftest/stats-normal.test.js',
+      './selftest/stats-stratified.test.js',
+      './selftest/stats-null.test.js',
+      './selftest/stats-filter.test.js',
     ],
   },
   {

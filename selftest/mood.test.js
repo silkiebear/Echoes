@@ -6,6 +6,8 @@ import {
   missingMoods,
   applyOrder,
 } from '../core/mood.js';
+import { defaultSettings } from '../core/settings.js';
+import { settingsConfig } from '../config/settings.js';
 
 const P = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
 
@@ -104,4 +106,40 @@ test('applyOrder does not mutate its inputs', () => {
   applyOrder(settings, ordered, P);
   assert.deepEqual(settings, settingsCopy, 'settings is unchanged');
   assert.deepEqual(ordered, orderedCopy, 'ordered is unchanged');
+});
+
+test('preset names match after trim and case-folding', () => {
+  const s = defaultSettings();
+  assert.deepEqual(missingMoods(s, [' YAY! ', 'Good', 'AWFUL']), [], 'no tap setup for matching names');
+  assert.equal(moodScore(s, ' Awful '), 1, 'awful scores 1 of 5');
+  assert.equal(moodScore(s, 'YAY!'), 5, 'yay! scores 5 of 5');
+});
+
+test('a name that matches no preset goes to the tap list', () => {
+  assert.deepEqual(missingMoods(defaultSettings(), ['yay!', 'okay']), ['okay'], 'only unmatched names are missing');
+});
+
+test('applyOrder keeps the preset spelling and colour', () => {
+  const good = settingsConfig.moodPresets.find((m) => m.name === 'good');
+  assert.deepEqual(
+    applyOrder(defaultSettings(), [{ name: 'GOOD ', order: 1 }], P),
+    [{ name: 'good', order: 1, color: good.color }],
+    'matched name takes the preset spelling and colour'
+  );
+});
+
+test('presets score five moods with yay! best', () => {
+  const s = defaultSettings();
+  assert.equal(s.moods.length, 5, 'five presets by default');
+  assert.equal(moodScore(s, 'yay!'), 5, 'yay! is the best of five');
+  assert.equal(moodScore(s, 'awful'), 1, 'awful is the worst of five');
+});
+
+test('__proto__ and constructor match nothing and change no object', () => {
+  const s = defaultSettings();
+  const before = JSON.parse(JSON.stringify(s));
+  assert.deepEqual(missingMoods(s, ['__proto__', 'constructor']), ['__proto__', 'constructor'], 'both are missing');
+  assert.equal(moodScore(s, '__proto__'), null, '__proto__ has no score');
+  assert.equal(moodScore(s, 'constructor'), null, 'constructor has no score');
+  assert.deepEqual(s, before, 'settings is unchanged');
 });

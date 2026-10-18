@@ -17,6 +17,15 @@ export const settingsConfig = {
     { code: 'D', name: 'dreams', color: '#4fa3c7' },
     { code: 'M', name: 'emotions', color: '#9aa1b0' },
   ],
+  // Default mood presets (SPEC 12); order 1 is best. Lightness is spread (WCAG relative luminance about
+  // 0.08, 0.20, 0.29, 0.47, 0.58) so the colours differ by lightness as well as hue (SPEC 15).
+  moodPresets: [
+    { name: 'yay!', order: 1, color: '#1b5e20' },
+    { name: 'good', order: 2, color: '#aed581' },
+    { name: 'meh', order: 3, color: '#4fc3f7' },
+    { name: 'bad', order: 4, color: '#ef6c00' },
+    { name: 'awful', order: 5, color: '#e53935' },
+  ],
   moodPalette: ['#3f9e6b', '#7cbf5a', '#c9c24a', '#e0953a', '#c4553f', '#8a6fb8', '#5b9bd5'],
   q2: { maxRows: 200 },
   completeness: { minMarksFraction: 0.25 },

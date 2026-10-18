@@ -4,8 +4,8 @@
 //   hooks:   { progress(stage, fraction), shouldCancel(), yield() }
 //
 // result = {
-//   meta: { cellsTested, cellsUntested, kept, discoveries, discoveriesLongRuns, ms, runner, cancelled, seed },
-//   rows: [{ exposure, outcome, window, n, k, K, N, rate, base, rr, diff, p, q,
+//   meta: { cellsTested, cellsUntested, kept, discoveries, discoveriesLongRuns, family, ms, runner, cancelled, seed },
+//   rows: [{ exposure, outcome, window, n, k, K, N, rate, base, rr, diff, rrAdj, p, pFisher, q,
 //            placeboP, placeboPercentile, longRuns,
 //            flags: { lowSample, failsFdr, failsTimeSplit, lowCompletenessSensitive, highAutocorrelation,
 //                     newLabel, shortWindow, directionAmbiguity } }],
@@ -20,6 +20,7 @@
 import { stats } from '../../config/stats.js';
 import { windows } from '../../config/windows.js';
 import { flags as flagDefs } from '../../config/flags.js';
+import { normalizeFilter, matchesFilter } from './label-filter.js';
 import { mulberry32 } from '../synth.js';
 import { prepare } from './prepare.js';
 import { scanCells, makeCheckpoint } from './scan.js';
@@ -57,7 +58,7 @@ export async function runScan(input, options = {}, hooks = {}) {
   const rnd = mulberry32(seed);
   const gate = makeCheckpoint(hooks, cfg.progress.chunkMs);
   const metaOf = (extra) => ({
-    cellsTested: 0, cellsUntested: 0, kept: 0, discoveries: 0, discoveriesLongRuns: 0,
+    cellsTested: 0, cellsUntested: 0, kept: 0, discoveries: 0, discoveriesLongRuns: 0, family: 0, filtered: null,
     ms: Math.round(now() - started), runner, cancelled: false, seed, ...extra,
   });
   const cancelledResult = () => ({ meta: metaOf({ cancelled: true }), rows: [], notices: [] });
@@ -111,7 +112,13 @@ export async function runScan(input, options = {}, hooks = {}) {
     directionAmbiguity: directionAmbiguityFlag(c, byKey.get(keyOf(c.o, c.e, c.wi)), cfg),
   });
 
-  const ranked = [...kept].sort(rankCmp).slice(0, cfg.keepTop);
+  // Label filter (4b.4): after the FDR step and before the keepTop cut; q values are not changed by it.
+  const filter = normalizeFilter(options.labelFilter, cfg.ui.filterMinChars);
+  const sorted = [...kept].sort(rankCmp);
+  const matching = filter
+    ? sorted.filter((c) => matchesFilter({ exposure: input.data.labels[c.e].text, outcome: input.data.labels[c.o].text }, filter))
+    : sorted;
+  const ranked = matching.slice(0, cfg.keepTop);
   const rows = ranked.map((c) => ({
     exposure: c.e,
     outcome: c.o,
@@ -124,7 +131,9 @@ export async function runScan(input, options = {}, hooks = {}) {
     base: c.rates.base,
     rr: c.rates.rr,
     diff: c.rates.diff,
+    rrAdj: c.rrAdj,
     p: c.p,
+    pFisher: c.pFisher,
     q: c.q,
     placeboP: c.placeboP,
     placeboPercentile: c.placeboPercentile,
@@ -140,6 +149,8 @@ export async function runScan(input, options = {}, hooks = {}) {
   const discoveriesLongRuns = found.filter((c) => c.longRuns).length;
   const meta = metaOf({
     cellsTested: scan.tested, cellsUntested: scan.untested, kept: kept.length, discoveries, discoveriesLongRuns,
+    family: scan.tested,
+    filtered: filter ? matching.length : null,
   });
   return { meta, rows, notices };
 }

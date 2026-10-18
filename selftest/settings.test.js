@@ -45,7 +45,7 @@ test('invalid mood fields are reported without leaking values', () => {
     'moods[0].order: missing or invalid',
     'moods[0].color: missing or invalid',
   ], 'three field errors in order');
-  assert.deepEqual(result.settings.moods, [], 'bad element dropped');
+  assert.deepEqual(result.settings.moods, defaultSettings().moods, 'no valid mood keeps the presets');
   assert.ok(
     result.errors.every((line) => line.indexOf('SECRET-VALUE') === -1),
     'no error string contains the bad value',
@@ -89,6 +89,29 @@ test('non-object input is rejected', () => {
   const result = validateSettings(null);
   assert.equal(result.settings, null, 'no settings for non-object');
   assert.deepEqual(result.errors, ['settings: not a JSON object'], 'single rejection error');
+});
+
+// 9b. The five presets are the default moods, in order, with the configured colours.
+test('defaults carry the five mood presets in order', () => {
+  const names = defaultSettings().moods.map((m) => `${m.order}:${m.name}`);
+  assert.deepEqual(names, ['1:yay!', '2:good', '3:meh', '4:bad', '5:awful'], 'preset names and orders');
+});
+
+// 9c. A saved mood list that has valid entries wins over the presets, even when it has fewer than five.
+test('cached three-mood settings win over the presets', () => {
+  const moods = [
+    { name: 'good', order: 1, color: '#3f9e6b' },
+    { name: 'ok', order: 2, color: '#7cbf5a' },
+    { name: 'bad', order: 3, color: '#c4553f' },
+  ];
+  const result = validateSettings({ version: 1, moods });
+  assert.deepEqual(result.settings.moods, moods, 'saved moods kept');
+  assert.deepEqual(result.errors, [], 'no errors');
+});
+
+// 9d. An empty mood list (the old default, possibly still cached) falls back to the presets.
+test('an empty saved mood list falls back to the presets', () => {
+  assert.deepEqual(validateSettings({ version: 1, moods: [] }).settings.moods, defaultSettings().moods, 'presets used');
 });
 
 // 10. Without storage, load returns null and save returns false; with storage, load must not throw.
