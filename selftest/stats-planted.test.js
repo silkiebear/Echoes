@@ -17,6 +17,8 @@ import { defaultSettings } from '../core/settings.js';
 import { statsSynth } from '../config/stats-synth.js';
 import { stats } from '../config/stats.js';
 import { windows } from '../config/windows.js';
+import { generateDrift } from '../core/synth-drift.js';
+import { statsDrift } from '../config/stats-drift.js';
 
 const UP_X = 0;
 const UP_Y = 1;
@@ -33,6 +35,16 @@ const SEEDS_P7 = 20;
 const FILLERS_P6 = 20;
 const LAG_BAND_FIRST = 1;
 const LAG_BAND_CHECK = 10;
+const G1_SMOKE_SEEDS = 2;
+// Same limit as the G1 share in stats-null.test.js (phase 4b, derivation there).
+const G1_SHARE_MAX = 0.08;
+
+// Tests that loop over many seeds run in Node only (phase 4c.0.4): the browser self-test has a time budget. Limits are
+// unchanged; the browser keeps a 2-seed smoke of the same null calibration.
+const nodeOnly = (name, fn) => {
+  if (typeof window === 'undefined') test(name, fn);
+  else skip(name, 'Node only');
+};
 
 let cachedScan = null;
 function defaultScan() {
@@ -132,7 +144,7 @@ test('P4 null calibration (a): default seed filler pairs with p below 0.05 at mo
 // for independent tests; 0.10 allows for dependence between cells that share a label.
 const G6_SEEDS = 10;
 const G6_MEAN_MAX = 0.10;
-test('G6 false share of discoveries on the wide sample: mean over 10 seeds at most 10 percent', async () => {
+nodeOnly('G6 false share of discoveries on the wide sample: mean over 10 seeds at most 10 percent', async () => {
   const perSeed = [];
   for (let i = 0; i < G6_SEEDS; i += 1) {
     const cells = await nullCells(statsSynth.seed + i);
@@ -148,6 +160,24 @@ test('G6 false share of discoveries on the wide sample: mean over 10 seeds at mo
   assert.ok(mean <= G6_MEAN_MAX, `mean false share ${mean}`);
 });
 
+// Browser smoke (phase 4c.0.4): two drift seeds, the G1 share limit only. Runs in Node too; the 20-seed gate is in
+// stats-null.test.js.
+test('G1 drift null smoke (2 seeds): p below 0.05 on at most 8 percent of tested cells', async () => {
+  let tested = 0;
+  let below = 0;
+  for (let i = 0; i < G1_SMOKE_SEEDS; i += 1) {
+    const data = generateDrift(statsDrift, statsDrift.seed + i, statsDrift.fillerCount);
+    const ps = [];
+    await runScan({ data, settings: defaultSettings() }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } }, { onCell: (c) => ps.push(c.p) });
+    tested += ps.length;
+    below += ps.filter((p) => p < ALPHA).length;
+  }
+  const share = below / tested;
+  console.log(`G1 smoke (2 seeds): p below 0.05 on ${below} of ${tested} tested cells (${share.toFixed(4)})`);
+  assert.ok(tested > 0, 'no cell tested');
+  assert.ok(share <= G1_SHARE_MAX, `share ${share}`);
+});
+
 test('P5 shift placebo for up X to up Y at 1 day with fast shuffles: placeboP at most 0.01', async () => {
   const r = rowOf(await defaultScan(), UP_X, UP_Y, '1d');
   assert.ok(r && r.placeboP !== null, 'placebo computed');
@@ -160,7 +190,7 @@ test('P5 shift placebo for up X to up Y at 1 day with fast shuffles: placeboP at
 // rejections) = 0.0034 at 0.05, so the limit 0.15 (at most 6 of 40) has a false-fail rate of about 0.3 percent under a
 // valid test. The stratified test (with the autocorrelation inflation) must meet it; the phase 3 Fisher rate (0.625)
 // is printed for comparison only. The cell is taken from the full scan; an untested cell counts as no rejection.
-test('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent; the stratified test rejects at most 15 percent', async () => {
+nodeOnly('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent; the stratified test rejects at most 15 percent', async () => {
   let placeboRejects = 0;
   let stratRejects = 0;
   let fisherRejects = 0;
@@ -188,7 +218,7 @@ test('P6 streak pair at 1 week over 40 seeds: placebo rejects at most 15 percent
   assert.ok(stratRate <= 0.15, `stratified rate ${stratRate}`);
 });
 
-test('P7 late plant at 1 day: time split fails on at least 85 percent of 20 seeds', () => {
+nodeOnly('P7 late plant at 1 day: time split fails on at least 85 percent of 20 seeds', () => {
   let fails = 0;
   for (let i = 0; i < SEEDS_P7; i += 1) {
     const data = generateWide(statsSynth, statsSynth.seed + i);

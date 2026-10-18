@@ -1,0 +1,127 @@
+/* Explore tab (phase 4c, 4c.2): label search, results, chips and the T-view controls. Tokens only. Dark default, light via
+   data-theme. Touch targets use --touch (44 px). A selected result has a dashed border as well as aria-pressed. */
+
+/* Null mood class of the mood colour bins (diverge.js moodBin returns 0 for a day without a mood). Not a colour from the
+   scale: it reads as "no entry", like the n/a class. */
+.bin-0 {
+  fill: var(--surface-2);
+}
+
+.explore-note,
+.explore-msg {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-1);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.explore-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--touch);
+  min-height: var(--touch);
+  padding: 0 var(--space-1);
+  margin: 0 0 var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.explore-results {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-1);
+  min-width: 0;
+}
+
+.explore-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--space-1);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.explore-result[aria-pressed="true"] {
+  border-style: dashed;
+}
+
+.explore-result-meta {
+  color: var(--text-muted);
+  font-size: 0.875em;
+}
+
+.explore-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-1);
+  min-width: 0;
+}
+
+.explore-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: 0 0 0 var(--space-1);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.explore-chip-text {
+  min-width: 0;
+}
+
+.explore-chip-remove,
+.explore-clear {
+  box-sizing: border-box;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0 var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.explore-clear {
+  margin: 0 0 var(--space-1);
+}
+
+.explore-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  min-width: 0;
+}
+
+.explore-controls select {
+  box-sizing: border-box;
+  height: var(--touch);
+  min-height: var(--touch);
+  min-width: 0;
+  padding: 0 var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}

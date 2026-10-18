@@ -12,4 +12,8 @@ export const modules = [
   './q1-coverage.js',
   './q2-label-coding.js',
   './echo-scan.js',
+  './diag-check.js',
+  './explore-select.js',
+  './explore-time.js',
+  './explore-periodic.js',
 ];

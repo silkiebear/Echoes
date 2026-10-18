@@ -37,7 +37,9 @@ function render(data, opts = {}) {
     body += `<rect class="bar" x="${bx}" y="${barTop}" width="${barW}" height="${barH}" rx="2"/>`;
     body += svgText(centreX, Math.max(plotTop, barTop - pad / 2), formatPercent(row.rate), 't', 'middle', small);
     body += svgText(centreX, plotTop + plotHeight + pad + small / 2, monthShort(row.month), 't-muted', 'middle', small);
-    body += svgText(centreX, plotTop + plotHeight + pad + small * 1.5 + pad / 2, String(row.n), 't-muted', 'middle', small);
+    // Days with the label in this month (phase 4c, 4c.3): rate x n is the count, exact up to rounding. The bar height is
+    // the share of the observed days in this month, which the card note says.
+    body += svgText(centreX, plotTop + plotHeight + pad + small * 1.5 + pad / 2, String(Math.round(row.rate * row.n)), 't-muted', 'middle', small);
   }
   const nY = plotTop + plotHeight + pad + small * 1.5 + pad / 2;
   const width = plotRight + pad;

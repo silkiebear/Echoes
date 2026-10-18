@@ -232,9 +232,14 @@ function selftestLines() {
   return lines;
 }
 
+// The registry count is a number, not text: it lets a user check that only the export's labels and moods are
+// registered (phase 4c, 4c.0.2). It is the last line, after every parse key.
 function parseStatLines() {
-  if (!parseStats) return ['(none yet)'];
-  return flattenStats(parseStats, (value, name) => parseStatValue(value, name, safe, parser.maxShapeChars));
+  const lines = parseStats
+    ? flattenStats(parseStats, (value, name) => parseStatValue(value, name, safe, parser.maxShapeChars))
+    : ['(none yet)'];
+  lines.push(`registeredStrings: ${entries.size}`);
+  return lines;
 }
 
 function errorLines() {

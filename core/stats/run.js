@@ -4,7 +4,8 @@
 //   hooks:   { progress(stage, fraction), shouldCancel(), yield() }
 //
 // result = {
-//   meta: { cellsTested, cellsUntested, kept, discoveries, discoveriesLongRuns, family, ms, runner, cancelled, seed },
+//   meta: { cellsTested, cellsUntested, kept, discoveries, discoveriesLongRuns, family, ms, runner, cancelled, seed,
+//           up, down, noDirection, byWindow, untested },
 //   rows: [{ exposure, outcome, window, n, k, K, N, rate, base, rr, diff, rrAdj, p, pFisher, q,
 //            placeboP, placeboPercentile, longRuns,
 //            flags: { lowSample, failsFdr, failsTimeSplit, lowCompletenessSensitive, highAutocorrelation,
@@ -59,6 +60,7 @@ export async function runScan(input, options = {}, hooks = {}) {
   const gate = makeCheckpoint(hooks, cfg.progress.chunkMs);
   const metaOf = (extra) => ({
     cellsTested: 0, cellsUntested: 0, kept: 0, discoveries: 0, discoveriesLongRuns: 0, family: 0, filtered: null,
+    up: 0, down: 0, noDirection: 0, byWindow: cfg.windows.map(() => 0), untested: 0,
     ms: Math.round(now() - started), runner, cancelled: false, seed, ...extra,
   });
   const cancelledResult = () => ({ meta: metaOf({ cancelled: true }), rows: [], notices: [] });
@@ -147,10 +149,18 @@ export async function runScan(input, options = {}, hooks = {}) {
   const found = kept.filter((c) => c.q !== null && c.q < cfg.alpha);
   const discoveries = found.length;
   const discoveriesLongRuns = found.filter((c) => c.longRuns).length;
+  // Direction and window counts (4c.0.3). up + down + noDirection = discoveries; byWindow follows config\windows.js order.
+  const hasRatio = (c) => Number.isFinite(c.rrAdj);
+  const unity = cfg.direction.unity;
   const meta = metaOf({
     cellsTested: scan.tested, cellsUntested: scan.untested, kept: kept.length, discoveries, discoveriesLongRuns,
     family: scan.tested,
     filtered: filter ? matching.length : null,
+    up: found.filter((c) => hasRatio(c) && c.rrAdj >= unity).length,
+    down: found.filter((c) => hasRatio(c) && c.rrAdj < unity).length,
+    noDirection: found.filter((c) => !hasRatio(c)).length,
+    byWindow: cfg.windows.map((_, wi) => found.filter((c) => c.wi === wi).length),
+    untested: scan.untested,
   });
   return { meta, rows, notices };
 }

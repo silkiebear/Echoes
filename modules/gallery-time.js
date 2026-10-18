@@ -81,9 +81,8 @@ export default {
   title: 'Gallery: time',
   phase: 1,
   order: 6,
-  mount(container, ctx) {
+  mount(container) {
     const data = generate(synthConfig);
-    for (const label of data.labels) ctx.diag.register(label.text, 'label');
     const base = buildTimeData(data);
     const byId = (id) => views.find((v) => v.id === id);
     const rollingIds = T.rolling.labels.map((text) => labelIdOf(data, text));

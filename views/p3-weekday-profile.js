@@ -42,7 +42,9 @@ function render(data, opts = {}) {
     const vLabelY = Math.max(plotTop, by - pad / 2);
     body += svgText(cx, vLabelY, formatPercent(row.rate), 't', 'middle', small);
     body += svgText(cx, bottom + pad + small / 2, row.label, 't-muted', 'middle', small);
-    body += svgText(cx, bottom + pad + small / 2 + small + pad / 2, 'n=' + row.n, 't-muted', 'middle', small);
+    // Days with the label on this weekday (phase 4c, 4c.3): rate x n is the count, exact up to rounding. The bar height
+    // is the share of the observed days on this weekday, which the card note says.
+    body += svgText(cx, bottom + pad + small / 2 + small + pad / 2, String(Math.round(row.rate * row.n)), 't-muted', 'middle', small);
   }
   const width = x0 + data.rows.length * pitch + pad;
   const nLineY = bottom + pad + small / 2 + small + pad / 2;

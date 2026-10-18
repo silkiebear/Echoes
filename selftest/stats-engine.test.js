@@ -5,6 +5,7 @@ import { generateWide } from '../core/synth-wide.js';
 import { defaultSettings } from '../core/settings.js';
 import { statsSynth } from '../config/stats-synth.js';
 import { stats } from '../config/stats.js';
+import { windows } from '../config/windows.js';
 import * as diag from '../core/diag.js';
 
 const CANCEL_LIMIT_MS = 1000;
@@ -65,6 +66,19 @@ test('privacy: a label text is absent from the result and from the diagnostics',
   const result = await runScan({ data, settings: defaultSettings() }, { mode: 'fast' }, {});
   assert.ok(!JSON.stringify(result).includes('ZZPRIVATEWORD'), 'result carries label text');
   assert.ok(!diag.build({ includeData: false }).includes('ZZPRIVATEWORD'), 'diagnostics carry label text');
+});
+
+// Direction and window counts (phase 4c, 4c.0.3). The planted up pair at 1 day has rr above 1 and the down pair below 1
+// (stats-planted.test.js P1, P2), so both directions must be counted here as well.
+test('counts: up, down and noDirection add up to the discoveries; byWindow adds up to them too', async () => {
+  const data = generateWide(statsSynth, statsSynth.seed, FILLERS_SMALL);
+  const m = (await runScan({ data, settings: defaultSettings() }, { mode: 'fast' }, {})).meta;
+  assert.ok(m.discoveries > 0, 'discoveries exist');
+  assert.equal(m.up + m.down + m.noDirection, m.discoveries, 'direction split');
+  assert.equal(m.byWindow.length, windows.length, 'one count per window');
+  assert.equal(m.byWindow.reduce((sum, n) => sum + n, 0), m.discoveries, 'window split');
+  assert.ok(m.up >= 1, `no up discovery (up ${m.up})`);
+  assert.ok(m.down >= 1, `no down discovery (down ${m.down})`);
 });
 
 // Node-only: the browser run is measured by hand, not asserted (3.3).

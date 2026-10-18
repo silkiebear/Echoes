@@ -1,12 +1,14 @@
 // ENVIRONMENT values are printed as they are; the other blocks keep redaction (SPEC 8, phase 4a U5). Its own file
 // because diag.test.js is near the line limit. Each test loads a fresh copy of diag.js (as diag.test.js does).
+// The query key differs from diag.test.js ("fresh"): an equal URL returns the same module instance, so the registry
+// of one file leaked into the other (found in phase 4c).
 import { test, assert } from '../core/harness.js';
 import { describeEnvironment } from '../core/env.js';
 
 let freshCount = 0;
 async function fresh() {
   freshCount += 1;
-  return import(new URL(`../core/diag.js?fresh=${freshCount}`, import.meta.url).href);
+  return import(new URL(`../core/diag.js?envfresh=${freshCount}`, import.meta.url).href);
 }
 
 function section(text, name) {
@@ -36,6 +38,33 @@ test('LOG: the same registered string is a token in a log field', async () => {
   const log = section(d.build(), 'LOG');
   assert.ok(log.includes(`text=${token}`), 'log field not replaced by its token');
   assert.ok(!log.includes(`text=${probe}`), 'log field shows the registered string');
+});
+
+function registeredCount(text) {
+  const match = /registeredStrings: (\d+)/.exec(section(text, 'PARSE STATS'));
+  return match ? Number(match[1]) : null;
+}
+
+test('PARSE STATS: registeredStrings is the registry size as a number, on the last line', async () => {
+  const d = await fresh();
+  d.register('Alpha', 'label');
+  d.register('Beta', 'label');
+  d.register('Gamma', 'mood');
+  const text = d.build();
+  assert.equal(registeredCount(text), 3, 'registeredStrings not 3');
+  const lines = section(text, 'PARSE STATS').trim().split('\n');
+  assert.ok(lines[lines.length - 1].startsWith('registeredStrings: '), `last line is ${lines[lines.length - 1]}`);
+});
+
+test('PARSE STATS: snapshot and restore give back the same registry count', async () => {
+  const d = await fresh();
+  d.register('Alpha', 'label');
+  d.register('Beta', 'label');
+  const snap = d.snapshot();
+  d.register('Delta', 'label');
+  assert.equal(registeredCount(d.build()), 3, 'count after a new registration');
+  d.restore(snap);
+  assert.equal(registeredCount(d.build()), 2, 'count after restore');
 });
 
 test('ENVIRONMENT: a registered string equal to an environment key name leaves the key unchanged', async () => {

@@ -22,6 +22,7 @@ export const groups = [
       './selftest/stats-stratified.test.js',
       './selftest/stats-null.test.js',
       './selftest/stats-filter.test.js',
+      './selftest/scan-text.test.js',
     ],
   },
   {
@@ -29,6 +30,9 @@ export const groups = [
     title: 'UI and navigation',
     files: [
       './selftest/scan-ui.test.js',
+      './selftest/scan-plain-ui.test.js',
+      './selftest/explore-ui.test.js',
+      './selftest/explore-periodic-ui.test.js',
       './selftest/tabs.test.js',
       './selftest/tabs-ui.test.js',
       './selftest/scroll-anchor.test.js',
@@ -42,6 +46,8 @@ export const groups = [
       './selftest/harness.test.js',
       './selftest/diag.test.js',
       './selftest/diag-env.test.js',
+      './selftest/selection.test.js',
+      './selftest/view-data.test.js',
       './selftest/export-parse.test.js',
       './selftest/parse-stats.test.js',
       './selftest/csv.test.js',
@@ -65,6 +71,7 @@ export const groups = [
       './selftest/synth.test.js',
       './selftest/synth-time.test.js',
       './selftest/synth-wide.test.js',
+      './selftest/synth-shared.test.js',
       './selftest/echo-demo.test.js',
       './selftest/views.test.js',
       './selftest/layout.test.js',
@@ -78,6 +85,7 @@ export const groups = [
       './selftest/profile.test.js',
       './selftest/theme.test.js',
       './selftest/computed-style.test.js',
+      './selftest/explore-parity.test.js',
     ],
   },
 ];

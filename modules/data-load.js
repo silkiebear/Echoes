@@ -8,6 +8,8 @@ import { exportText } from '../core/synth-export.js';
 import { parseExport } from '../core/export-parse.js';
 import { validateSettings, saveCached, exportSettingsText } from '../core/settings.js';
 import { downloadText } from '../core/download.js';
+import { missingMoods } from '../core/mood.js';
+import { moodHint } from '../config/explore.js';
 import * as store from '../core/store.js';
 
 const BYTE_ORDER_MARK = /^\uFEFF/;
@@ -76,8 +78,17 @@ export default {
 
     const status = el('p', 'status-line');
     status.setAttribute('role', 'status');
+    // Mood order now lives in Tools (phase 4c): this line says where to set it when a loaded mood name has no preset.
+    const moodNote = el('p', 'card-sub');
+    moodNote.hidden = true;
     const counts = el('dl', 'counts');
-    container.append(note, pick, row, status, counts);
+    container.append(note, pick, row, status, moodNote, counts);
+
+    function renderMoodHint(state) {
+      const pending = Boolean(state.data && state.settings && missingMoods(state.settings, state.data.moodNames).length > 0);
+      moodNote.textContent = pending ? moodHint : '';
+      moodNote.hidden = !pending;
+    }
 
     function report(message) {
       status.textContent = message;
@@ -156,12 +167,14 @@ export default {
     });
 
     renderCounts(counts, store.get());
+    renderMoodHint(store.get());
     const unsubscribe = store.subscribe((state) => {
       if (!container.isConnected) {
         unsubscribe();
         return;
       }
       renderCounts(counts, state);
+      renderMoodHint(state);
     });
   },
 };

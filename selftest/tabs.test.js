@@ -73,8 +73,27 @@ test('nextTab: arrows wrap, Home and End jump to the ends, other keys keep the t
   assert.equal(nextTab([], 'x', 'ArrowRight'), 'x', 'no tabs');
 });
 
+// Phase 4c removed the Scan tab; a stored 'scan' from an older page view must fall back without an error.
+test('placement (4c): Mood order and the check card are in Tools; Echo scan is the last Data module by registry order', async () => {
+  const tab = (id) => tabs.find((t) => t.id === id);
+  assert.ok(tab('tools').modules.includes('mood-setup'), 'mood-setup not in Tools');
+  assert.ok(tab('tools').modules.includes('diag-check'), 'diag-check not in Tools');
+  assert.ok(!tab('data').modules.includes('mood-setup'), 'mood-setup still in Data');
+  assert.ok(!tab('gallery').modules.includes('diag-check'), 'diag-check still in Gallery');
+  const base = new URL('../modules/', import.meta.url);
+  const orders = new Map();
+  for (const path of manifest) {
+    const mod = (await import(new URL(path, base).href)).default;
+    orders.set(mod.id, mod.order);
+  }
+  const dataByOrder = [...tab('data').modules].sort((a, b) => orders.get(a) - orders.get(b));
+  assert.equal(dataByOrder[dataByOrder.length - 1], 'echo-scan', `last Data module by order is ${dataByOrder.at(-1)}`);
+});
+
 test('initialTab: a stored id that exists is used; a missing, unknown or null id falls back to the default', () => {
-  assert.equal(initialTab(TAB_IDS, 'scan', defaultTab), 'scan', 'stored id ignored');
+  assert.ok(!TAB_IDS.includes('scan'), 'the scan tab is still in the map');
+  assert.equal(initialTab(TAB_IDS, 'tools', defaultTab), 'tools', 'stored id ignored');
+  assert.equal(initialTab(TAB_IDS, 'scan', defaultTab), defaultTab, 'removed scan id not replaced');
   assert.equal(initialTab(TAB_IDS, 'removed', defaultTab), defaultTab, 'unknown id not replaced');
   assert.equal(initialTab(TAB_IDS, null, defaultTab), defaultTab, 'null not replaced');
   assert.equal(initialTab(['a', 'b'], 'zzz', 'nope'), 'a', 'no valid fallback should give the first tab');

@@ -77,14 +77,13 @@ export default {
   title: 'Gallery: periodic',
   phase: 1,
   order: 7,
-  mount(container, ctx) {
+  mount(container) {
     const shared = { single: false, synth: null };
     const regenerate = (single) => {
       shared.synth = generate({ ...synthConfig, timeOfDay: { ...synthConfig.timeOfDay, mode: single ? 'single' : 'varied' } });
       shared.single = single;
     };
     regenerate(false);
-    for (const label of shared.synth.labels) ctx.diag.register(label.text, 'label');
     const labelOptions = shared.synth.labels.map((l) => ({ value: l.id, label: l.text }));
     const dialIds = G.dialLabels.map((text) => shared.synth.labels.find((l) => l.text === text).id);
     const defaultLabelId = shared.synth.labels.find((l) => l.text === G.periodicLabel).id;

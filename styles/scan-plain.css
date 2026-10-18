@@ -1,0 +1,78 @@
+/* Plain-language Echo scan rows and the "How to read this" block (phase 4c, 4c.0b). Tokens only. Dark default, light via
+   data-theme. Verdict kind is a non-colour cue: solid outline for a pass, dashed for pass-warnings and fail. */
+.scan-item-effect,
+.scan-item-shift {
+  margin: var(--space-1) 0 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.scan-item-shift {
+  color: var(--text-muted);
+}
+
+.scan-verdict {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.scan-verdict-pass {
+  border-style: solid;
+}
+
+.scan-verdict-pass-warnings,
+.scan-verdict-fail {
+  border-style: dashed;
+}
+
+.scan-warnings {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  min-width: 0;
+}
+
+.scan-warning {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  min-width: 0;
+}
+
+.scan-warning-text {
+  margin: 0;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.scan-help-block {
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1) var(--space-1);
+  margin: 0 0 var(--space-2);
+  min-width: 0;
+}
+
+.scan-help-summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.scan-help-text {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

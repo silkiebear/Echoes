@@ -1,22 +1,23 @@
 // Echo scan card: runs the statistics engine over the loaded export or a synthetic wide sample (in a worker when the
-// browser allows) and shows the rows ranked by q. Synthetic sources are not your data. Text only: every label, window
-// and pill reaches the page through textContent, so no input string can reach the DOM as markup.
+// browser allows) and shows the rows ranked by q. Synthetic sources are not your data. The default view is plain
+// language (core\scan-text.js); the numbers sit behind "Show technical numbers" (phase 4c, 4c.0b). Text only: every
+// label, window and pill reaches the page through textContent, so no input string can reach the DOM as markup.
 import { startScan } from '../core/stats/client.js';
 import { generateWide } from '../core/synth-wide.js';
 import { defaultSettings } from '../core/settings.js';
-import { formatNumber, formatRatio } from '../core/format.js';
+import { formatNumber } from '../core/format.js';
 import { windows } from '../config/windows.js';
 import { stats } from '../config/stats.js';
 import { statsSynth } from '../config/stats-synth.js';
-import { viewSettings } from '../config/views.js';
 import * as store from '../core/store.js';
 import { checkToggle } from '../core/gallery-kit.js';
 import { filterControls } from '../core/scan-filter-ui.js';
 import { normalizeFilter } from '../core/stats/label-filter.js';
+import { describeRow, plainSummary } from '../core/scan-text.js';
+import { itemNode, howToNode } from '../core/scan-render.js';
 
 const ui = stats.ui;
 const PERCENT = 100;
-const { diffDigits } = viewSettings.format;
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -43,19 +44,9 @@ function selectOf(texts, label) {
   return sel;
 }
 
-function windowText(id) {
-  const win = windows.find((w) => w.id === id);
-  return win ? win.label : String(id);
-}
-
 const pillText = (id) => ui.pillNames[id] || id;
 
-// Small p and q values keep their scale (5e-44 must not print as 0).
-function formatP(p) {
-  if (p === null) return ui.na;
-  return p < ui.pSciBelow ? p.toExponential(ui.pDigits) : formatNumber(p, ui.pDigits);
-}
-
+// Technical summary (shown with "Show technical numbers"): every old number, with its name.
 function summaryText(meta) {
   const s = ui.summary;
   const discoveries = `${s.discoveries}: ${formatNumber(meta.discoveries)} `
@@ -66,6 +57,7 @@ function summaryText(meta) {
     discoveries,
     `${formatNumber(meta.ms)} ${s.ms}`,
     `${s.runner}: ${meta.runner}`,
+    ui.technical.summaryUntested.replace('{count}', formatNumber(meta.untested)),
   ].join(ui.sep);
 }
 
@@ -92,31 +84,6 @@ function fill(text, values) {
   return Object.entries(values).reduce((out, [key, value]) => out.replace(`{${key}}`, String(value)), text);
 }
 
-// One item per row: head (rank, exposure, outcome, window), metrics line, then the pills. Long-run rows also get a dashed border.
-function itemEl({ row, rank }, names) {
-  const item = el('div', 'scan-item');
-  if (row.longRuns) item.classList.add('scan-item-long');
-  const exposure = names.get(row.exposure) ?? String(row.exposure);
-  const outcome = names.get(row.outcome) ?? String(row.outcome);
-  const head = el('p', 'scan-item-head', `${ui.rankPrefix}${rank}${ui.sep}${exposure}${ui.arrow}${outcome}${ui.sep}${windowText(row.window)}`);
-  const m = ui.metricNames;
-  const metrics = el('p', 'scan-item-metrics', [
-    `${m.rr} ${formatRatio(row.rrAdj)}`,
-    `${m.diff} ${formatNumber(row.diff, diffDigits)}`,
-    `${m.n} ${formatNumber(row.n)}`,
-    `${m.q} ${formatP(row.q)}`,
-    `${m.placebo} ${formatP(row.placeboP)}`,
-  ].join(ui.sep));
-  const flags = el('div', 'scan-item-flags');
-  for (const [flag, on] of Object.entries(row.flags)) {
-    if (on === true) flags.append(el('span', 'scan-pill', pillText(flag)));
-  }
-  if (row.longRuns) flags.append(el('span', 'scan-pill', ui.longRunPill));
-  if (flags.childElementCount === 0) flags.textContent = ui.none;
-  item.append(head, metrics, flags);
-  return item;
-}
-
 export default {
   id: 'echo-scan',
   title: ui.title,
@@ -138,17 +105,23 @@ export default {
     const filterCtl = filterControls(ui.filter);
     const filterHelp = el('p', 'scan-help', ui.filter.help);
     let hideFlagged = false; // display filter; not reset by a new run
+    let showTechnical = false; // display only; not reset by a new run
     const hideToggle = checkToggle(ui.hideFlagged, (checked) => {
       hideFlagged = checked;
       renderResult();
     });
+    const technicalToggle = checkToggle(ui.technical.toggle, (checked) => {
+      showTechnical = checked;
+      renderResult();
+    });
+    const howTo = howToNode(ui);
     const box = el('div', 'scan-box');
-    box.append(controls, filterCtl.node, filterHelp, hideToggle, sortHelp, progress);
+    box.append(controls, filterCtl.node, filterHelp, hideToggle, technicalToggle, sortHelp, progress);
     const result = el('div', 'scan-result');
     container.append(box, result);
 
     let scan = null; // { cancel, done } while a scan runs, else null
-    let view = null; // { result, names, sort, limit } after a run, { error: true } after a failed run, else null
+    let view = null; // { result, labels, sort, limit } after a run, { error: true } after a failed run, else null
 
     function showNoData() {
       result.replaceChildren(el('p', 'scan-note', ui.noData));
@@ -166,10 +139,12 @@ export default {
         result.append(el('p', 'scan-notice', ui.cancelled));
         return;
       }
-      result.append(el('p', 'scan-note', summaryText(meta)));
+      result.append(howTo);
+      for (const sentence of plainSummary(meta, windows, stats)) result.append(el('p', 'scan-note', sentence));
+      if (showTechnical) result.append(el('p', 'scan-note', summaryText(meta)));
       if (meta.filtered !== null) result.append(el('p', 'scan-note', fill(ui.filter.matches, { filtered: meta.filtered })));
       for (const notice of notices) result.append(el('p', 'scan-notice', pillText(notice)));
-      if (meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
+      if (showTechnical && meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
 
       const keep = new Set(visibleRows(rows, hideFlagged));
       const order = sortOrder(rows, view.sort).filter((i) => keep.has(i)).map((i) => ({ row: rows[i], rank: i + 1 }));
@@ -180,7 +155,10 @@ export default {
       }
       const shown = order.slice(0, view.limit);
       const list = el('div', 'scan-list');
-      for (const entry of shown) list.append(itemEl(entry, view.names));
+      for (const { row, rank } of shown) {
+        const desc = describeRow(row, view.labels, windows, meta, stats, rank);
+        list.append(itemNode(desc, row, ui, showTechnical));
+      }
       result.append(list);
 
       if (order.length > shown.length) {
@@ -244,7 +222,7 @@ export default {
       } else {
         view = {
           result: out,
-          names: new Map(input.data.labels.map((l) => [l.id, l.text])),
+          labels: input.data.labels,
           sort: sortSel.value,
           limit: ui.pageRows,
         };
@@ -252,6 +230,10 @@ export default {
           diag.logStatic('INFO', 'echo scan done', {
             cells: out.meta.cellsTested,
             discoveries: out.meta.discoveries,
+            up: out.meta.up,
+            down: out.meta.down,
+            noDirection: out.meta.noDirection,
+            untested: out.meta.untested,
             ms: out.meta.ms,
             runner: out.meta.runner,
           });

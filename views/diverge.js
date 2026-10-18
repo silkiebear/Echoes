@@ -18,8 +18,10 @@ export function binOf(rr) {
   return 1 + Math.round(((clamped + clampLog2) / (2 * clampLog2)) * (colorBins - 1));
 }
 
-// Mood score 1 (bad) to 5 (great) mapped onto the colour bins.
+// Mood score 1 (bad) to 5 (great) mapped onto the colour bins. A null score (a day with no mood) is bin 0, the null
+// class; it must not read as the worst mood (phase 4c, 4c.2, user decision A).
 export function moodBin(score) {
+  if (score === null || score === undefined) return 0;
   const index = Math.min(time.moodBins.length, Math.max(1, Math.round(score))) - 1;
   return time.moodBins[index];
 }

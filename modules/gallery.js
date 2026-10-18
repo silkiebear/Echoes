@@ -84,42 +84,15 @@ function e4Card(view, data) {
   });
 }
 
-// Deliberate error for checking diagnostics: the message names a synthetic label, which must appear as a token.
-// The status line is an aria-live region; it reports the count after the error has been captured.
-function errorCard(diag, sampleText) {
-  const card = document.createElement('section');
-  card.className = 'card';
-  const heading = document.createElement('h2');
-  heading.textContent = 'Diagnostics check';
-  const note = document.createElement('p');
-  note.className = 'card-sub';
-  note.textContent = 'Throws an error later, outside the click handler. The diagnostics file should show a token, not the label text.';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.textContent = 'Trigger test error';
-  const status = document.createElement('p');
-  status.className = 'card-sub';
-  status.setAttribute('aria-live', 'polite');
-  btn.addEventListener('click', () => {
-    setTimeout(() => {
-      throw new Error(`Deliberate test error near ${sampleText}`);
-    }, 0);
-    setTimeout(() => {
-      status.textContent = `Test error recorded (${diag.totalErrors()})`;
-    }, 0);
-  });
-  card.append(heading, note, btn, status);
-  return card;
-}
-
+// The synthetic labels are not registered here: they reach no log at mount (phase 4c, 4c.0.2). The Tools card
+// (diag-check.js) registers its own demo label when its button is pressed.
 export default {
   id: 'gallery',
   title: 'Gallery',
   phase: 1,
   order: 5,
-  mount(container, ctx) {
+  mount(container) {
     const data = generate(synthConfig);
-    for (const label of data.labels) ctx.diag.register(label.text, 'label');
     const viewData = buildViewData(data);
 
     container.append(banner('Synthetic data. Not your export. Badges marked DEMO are forced for display, not computed.'));
@@ -129,6 +102,5 @@ export default {
     ];
     for (const { card } of cards) container.append(card);
     for (const { redraw } of cards) redraw();
-    container.append(errorCard(ctx.diag, data.labels[0].text));
   },
 };

@@ -16,10 +16,16 @@ function rangeOf(id) {
   return L.ranges.find((r) => r.id === id) || L.ranges.find((r) => r.id === L.defaultRange);
 }
 
+// Days without a mood (null) are left out of the mean; a bucket with none has no mean (null, bin 0).
 function meanMood(data, from, to) {
   let sum = 0;
-  for (let i = from; i < to; i++) sum += data.mood[i];
-  return sum / (to - from);
+  let n = 0;
+  for (let i = from; i < to; i++) {
+    if (data.mood[i] === null || data.mood[i] === undefined) continue;
+    sum += data.mood[i];
+    n += 1;
+  }
+  return n === 0 ? null : sum / n;
 }
 
 function render(data, opts = {}) {

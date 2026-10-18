@@ -77,16 +77,17 @@ if (typeof document === 'undefined') {
       buttonNamed(card, ui.run).click();
       await waitFor(() => card.querySelector('.scan-list, .scan-notice'));
 
-      const summary = [...card.querySelectorAll('.scan-note')].find((n) => n.textContent.startsWith(`${ui.summary.cells}: `));
+      const checkedStart = ui.plainSummary.checked.split(' ')[0];
+      const notes = [...card.querySelectorAll('.scan-note')].map((n) => n.textContent);
       const expected = await startScan({
         data: generateWide(statsSynth, statsSynth.seed, statsSynth.fillerCount),
         settings: defaultSettings(),
       }, { mode: 'fast' }).done;
-      if (!summary) {
-        failures.push('no summary line');
+      if (!notes.some((t) => t.startsWith(checkedStart))) {
+        failures.push('no plain summary line');
       } else {
-        const discoveriesText = `${ui.summary.discoveries}: ${formatNumber(expected.meta.discoveries)} (`;
-        if (!summary.textContent.includes(discoveriesText)) failures.push(`summary lacks "${discoveriesText}"`);
+        const discoveriesText = `${formatNumber(expected.meta.discoveries)} passed the check for chance`;
+        if (!notes.some((t) => t.includes(discoveriesText))) failures.push(`plain summary lacks "${discoveriesText}"`);
       }
 
       const rowsBefore = card.querySelectorAll('.scan-item').length;
@@ -196,7 +197,7 @@ if (typeof document === 'undefined') {
     const failures = [];
     const countItems = () => card.querySelectorAll('.scan-item').length;
     const rowsNote = () => {
-      const note = [...card.querySelectorAll('.scan-note')].find((n) => / of \d+ rows$/.test(n.textContent));
+      const note = [...card.querySelectorAll('.scan-note')].find((n) => / of \d+ rows shown$/.test(n.textContent));
       const m = note ? /(\d+) of (\d+) rows/.exec(note.textContent) : null;
       return m ? { shown: Number(m[1]), returned: Number(m[2]) } : null;
     };
