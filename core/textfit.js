@@ -16,15 +16,38 @@ export function textBox(x, y, text, fontPx, anchor = 'start') {
   return { x0, y0: y - fontPx / 2, x1: x0 + w, y1: y + fontPx / 2 };
 }
 
-// Greedy word wrap by estimated width. A single word longer than maxWidth stays on its own line.
+// Pieces of one word that each fit maxWidth. A character is never split from its word except here, where a word is
+// wider than the line (phase 4e: an unbroken label must not run off its view).
+function piecesOf(word, fontPx, maxWidth) {
+  const out = [];
+  let piece = '';
+  for (const ch of word) {
+    if (piece && estimateWidth(piece + ch, fontPx) > maxWidth) {
+      out.push(piece);
+      piece = ch;
+    } else {
+      piece += ch;
+    }
+  }
+  if (piece) out.push(piece);
+  return out;
+}
+
+// Greedy word wrap by estimated width. A word that fits its line is kept whole; a word wider than maxWidth is cut into
+// pieces that fit, and a cut piece continues on the next line without a space.
 export function wrapText(text, fontPx, maxWidth) {
+  const tokens = [];
+  for (const word of String(text).split(/\s+/).filter(Boolean)) {
+    const pieces = estimateWidth(word, fontPx) > maxWidth ? piecesOf(word, fontPx, maxWidth) : [word];
+    pieces.forEach((piece, i) => tokens.push({ text: piece, space: i === 0 && tokens.length > 0 }));
+  }
   const lines = [];
   let line = '';
-  for (const word of String(text).split(/\s+/).filter(Boolean)) {
-    const next = line ? `${line} ${word}` : word;
+  for (const token of tokens) {
+    const next = line && token.space ? `${line} ${token.text}` : `${line}${token.text}`;
     if (line && estimateWidth(next, fontPx) > maxWidth) {
       lines.push(line);
-      line = word;
+      line = token.text;
     } else {
       line = next;
     }

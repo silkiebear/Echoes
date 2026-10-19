@@ -1,6 +1,6 @@
 // Synthetic tracker-like data with planted effects. Output is deterministic for a given config.
 // Config shape: see app/config/synth.js. Output: { labels: [{id, text, code}], days: [{day, date, weekday, labels, mood}] }
-// where mood is an integer 1 (bad) to 5 (great).
+// where mood is an integer 1 (awful) to 5 (yay!).
 
 import { weekdayOf } from './calendar.js';
 import { buildEntries } from './time-entries.js';

@@ -17,6 +17,8 @@ import { buildE2Real } from '../core/echo-real.js';
 import exploreEchoModule from '../modules/explore-echo.js';
 
 const WIDTH = 320;
+// Measured text boxes may overrun a view edge by this much (sub-pixel rounding of the glyph box).
+const TEXT_TOLERANCE_PX = 1;
 const BLACK = 'rgb(0, 0, 0)';
 // Phase 4d limit for one E2 pair in the browser (phase4d.md, 4d.4.5).
 const E2_LIMIT_MS = 2000;
@@ -85,6 +87,106 @@ if (typeof document === 'undefined') {
       store.set(saved);
       if (original === null) document.documentElement.removeAttribute('data-theme');
       else document.documentElement.setAttribute('data-theme', original);
+    }
+    assert.equal(failures.length, 0, failures.join('; '));
+  });
+
+  // Phase 4e: every SVG text of the E cards lies inside its own view at 320 px, on the real scan (E1 matrix, E2 curve, E4).
+  test('E views texts at 320 px: every SVG text inside its own view on the real scan; store restored', async () => {
+    const saved = {
+      data: store.get().data,
+      parseStats: store.get().parseStats,
+      selection: store.get().selection,
+      pair: store.get().pair,
+      scanResult: store.get().scanResult,
+      settings: store.get().settings,
+    };
+    const host = document.createElement('section');
+    host.style.width = `${WIDTH}px`;
+    document.body.append(host);
+    const failures = [];
+    try {
+      const parsed = parseExport(exportText(synthConfig, {}), parser).data;
+      const settings = defaultSettings();
+      const scan = await runScan({ data: parsed, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
+      const event = parsed.labels.find((l) => l.text === EVENT_TEXT).id;
+      const outcome = parsed.labels.find((l) => l.text === OUTCOME_TEXT).id;
+      store.set({
+        data: parsed,
+        parseStats: null,
+        selection: [event, outcome],
+        pair: { window: '1d' },
+        scanResult: { rows: scan.rows, meta: scan.meta, data: parsed, settings },
+        settings,
+      });
+      exploreEchoModule.mount(host, {});
+      for (const card of host.querySelectorAll('section.card')) {
+        const name = card.querySelector('h2').textContent;
+        const svg = card.querySelector('svg');
+        if (!svg) {
+          failures.push(`${name} drew no SVG`);
+          continue;
+        }
+        const viewWidth = svg.viewBox.baseVal.width;
+        for (const t of svg.querySelectorAll('text')) {
+          const box = t.getBBox();
+          if (box.x < -TEXT_TOLERANCE_PX || box.x + box.width > viewWidth + TEXT_TOLERANCE_PX) {
+            failures.push(`${name}: "${t.textContent.slice(0, 24)}" at ${Math.round(box.x)} to ${Math.round(box.x + box.width)}, view ${viewWidth}`);
+          }
+        }
+      }
+    } finally {
+      host.remove();
+      store.set(saved);
+    }
+    assert.equal(failures.length, 0, failures.slice(0, 5).join('; '));
+  });
+
+  // The E1 message is long at 320 px (4e.0.2): every text fits the view width and the card does not scroll sideways.
+  test('E1 message at 320 px: wrapped lines fit the view width, no sideways scroll of the card; store restored', () => {
+    const saved = {
+      data: store.get().data,
+      parseStats: store.get().parseStats,
+      selection: store.get().selection,
+      pair: store.get().pair,
+      scanResult: store.get().scanResult,
+      settings: store.get().settings,
+    };
+    const host = document.createElement('section');
+    host.style.width = `${WIDTH}px`;
+    document.body.append(host);
+    const failures = [];
+    try {
+      const parsed = parseExport(exportText(synthConfig, {}), parser).data;
+      const settings = defaultSettings();
+      const event = parsed.labels.find((l) => l.text === EVENT_TEXT).id;
+      const outcome = parsed.labels.find((l) => l.text === OUTCOME_TEXT).id;
+      store.set({
+        data: parsed,
+        parseStats: null,
+        selection: [event, outcome],
+        pair: { window: '1d' },
+        scanResult: { rows: [], meta: {}, data: parsed, settings },
+        settings,
+      });
+      exploreEchoModule.mount(host, {});
+      const card = host.querySelector('section.card');
+      const svg = card.querySelector('svg');
+      if (!svg) {
+        failures.push('E1 drew no SVG');
+      } else {
+        const viewWidth = svg.viewBox.baseVal.width;
+        const texts = [...svg.querySelectorAll('text')];
+        if (texts.length < 2) failures.push(`E1 message has ${texts.length} line(s) at ${WIDTH} px, expected a wrap`);
+        for (const t of texts) {
+          const w = t.getBBox().width;
+          if (w > viewWidth) failures.push(`E1 message text ${Math.round(w)} px wider than the view ${viewWidth} px`);
+        }
+      }
+      if (card.scrollWidth > card.clientWidth) failures.push(`E1 card sideways scroll ${card.scrollWidth} > ${card.clientWidth}`);
+    } finally {
+      host.remove();
+      store.set(saved);
     }
     assert.equal(failures.length, 0, failures.join('; '));
   });

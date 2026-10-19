@@ -3,6 +3,11 @@
 import { viewSettings } from '../config/views.js';
 import { synth as synthConfig } from '../config/synth.js';
 import { views } from '../views/index.js';
+import { moodScale } from '../core/view-data.js';
+import { defaultSettings } from '../core/settings.js';
+
+// The default presets' names, colours and order (phase 4e): the synthetic moods are drawn in the same colours as Explore.
+const presets = moodScale(defaultSettings());
 import { generate } from '../core/synth.js';
 import { buildTimeData, buildYearData, buildRollingData, labelIdOf } from '../core/time-demo.js';
 import { banner, makeCard, variantButtons, selectControl } from '../core/gallery-kit.js';
@@ -15,7 +20,7 @@ function yearCard(view, data, base) {
   const labelOptions = data.labels.map((l) => ({ value: l.id, label: l.text }));
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: `Calendar year ${yearData.year}, synthetic. Colour is mood (bad to great) or presence of the chosen label.`,
+    note: `Calendar year ${yearData.year}, synthetic. Colour is mood (yay! to awful) or presence of the chosen label.`,
     controls: (redraw) => [
       variantButtons(view.variants, state, redraw),
       selectControl('Colour by', [
@@ -31,7 +36,7 @@ function yearCard(view, data, base) {
         redraw();
       }),
     ],
-    draw: (width) => view.render(yearData, { ...state, width }),
+    draw: (width) => view.render(yearData, { ...state, width, moodScale: presets }),
   });
 }
 
@@ -46,7 +51,7 @@ function lanesCard(view, data) {
         redraw();
       }),
     ],
-    draw: (width) => view.render(data, { ...state, width }),
+    draw: (width) => view.render(data, { ...state, width, moodScale: presets }),
   });
 }
 

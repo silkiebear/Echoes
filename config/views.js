@@ -33,6 +33,7 @@ export const viewSettings = {
     headerHeight: 48,     // column header band above the first row
     headerGap: 14,        // header text centre sits this far above the first row
     labelGap: 4,          // outcome labels end this far left of the grid
+    labelLineHeight: 14,  // line step of wrapped E1 headers, outcome labels and caption (phase 4e); one line keeps the layout
     margin: 8,
     captionGap: 8,        // caption centre to legend swatches
     legendBinWidth: 28,
@@ -55,6 +56,7 @@ export const viewSettings = {
     xLabelGap: 2,         // x tick labels sit this far below the tick marks
     captionGap: 8,        // caption starts this far below the x tick labels
     captionLineHeight: 14,
+    titleLineHeight: 14,  // line step of the wrapped E2 title (event to outcome, phase 4e); one line keeps the layout
     pad: 8,               // bottom and side padding for the caption
     pointRadius: 3,
     bandOpacity: 0.25,
@@ -82,7 +84,9 @@ export const viewSettings = {
     defaultWindow: 3,
     maxRows: 12,
     minEvents: 10,            // fewer events than this gets the lowSample demo flag
-    view: { barHeight: 14, rowGap: 8, shadeBins: 4, maxBarWidth: 120, labelMin: 80 },
+    // labelMaxWidth: the widest outcome label column; a longer label wraps (phase 4e). lineHeight: the line step of the
+    // wrapped caption and labels.
+    view: { barHeight: 14, rowGap: 8, shadeBins: 4, maxBarWidth: 120, labelMin: 80, labelMaxWidth: 160, lineHeight: 14 },
   },
   ui: {
     resizeDebounceMs: 150,  // charts redraw this long after the last resize or rotation event
@@ -93,7 +97,9 @@ export const viewSettings = {
     dayBoundaryMinutes: 240, // entries before 04:00 belong to the previous day (day-level views)
     pad: 8,
     smallGap: 4,
-    moodNames: ['bad', 'low', 'okay', 'good', 'great'], // mood score 1 to 5
+    // Mood names of the default presets (config\settings.js), best first: index 0 is score 5 (order 1, yay!), the last
+    // is score 1 (order 5, awful). Score s is names[n - s] (phase 4e, the user's names everywhere).
+    moodNames: ['yay!', 'good', 'meh', 'bad', 'awful'],
     moodBins: [1, 2, 4, 6, 7],   // mood score 1 to 5 -> colour bin 1 to 7 (5 steps spread over --div-1..7)
     moodSwatch: 10,
     moodLegendGap: 10,           // space between legend items

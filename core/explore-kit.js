@@ -2,10 +2,11 @@
 // pair. Pure, except that messageSvg only builds a string. Text is filled into placeholders in one pass.
 import { toViewData } from './view-data.js';
 import { svgDoc, svgText } from './svg.js';
+import { wrapText } from './textfit.js';
 import { explore } from '../config/explore.js';
 import { viewSettings } from '../config/views.js';
 
-const chart = explore.chart;
+const message = explore.message;
 
 let cache = { data: null, settings: null, view: null };
 
@@ -32,14 +33,23 @@ export function fill(template, values) {
   return template.replace(/\{(\w+)\}/g, (match, key) => (Object.hasOwn(values, key) ? String(values[key]) : match));
 }
 
-// A card with nothing to draw yet shows its message inside the chart area (same frame as the views).
-export function messageSvg(width, message, title) {
+
+
+// A card with nothing to draw yet shows its message inside the chart area (same frame as the views). The text wraps
+// to the card width and the height follows the line count (4e.0.2).
+export function messageSvg(width, text, title) {
+  const w = width || viewSettings.defaultWidth;
+  const { fontPx, lineHeight, padding } = message;
+  const lines = wrapText(text, fontPx, w - 2 * padding);
+  const body = lines
+    .map((line, i) => svgText(padding, padding + lineHeight / 2 + i * lineHeight, line, 't-muted', 'start', fontPx))
+    .join('');
   return svgDoc({
-    width: width || viewSettings.defaultWidth,
-    height: chart.messageHeight,
+    width: w,
+    height: 2 * padding + Math.max(1, lines.length) * lineHeight,
     title,
-    desc: message,
-    body: svgText(chart.messagePad, chart.messageBaseline, message, 't-muted', 'start'),
+    desc: text,
+    body,
   });
 }
 

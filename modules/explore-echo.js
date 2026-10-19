@@ -13,9 +13,14 @@ import { viewDataFor, selectedIds, fill, messageSvg, setNote } from '../core/exp
 import { buildE1Real, buildE2Real, buildE4Real } from '../core/echo-real.js';
 import { describeRow } from '../core/scan-text.js';
 import { prepare } from '../core/stats/prepare.js';
+import { cardHelp } from '../core/explain-kit.js';
+import { liveSentence } from '../core/explore-live.js';
 
 const ui = exploreEcho.ui;
 const E = explore.ui;
+
+// Help ids of the cards in this module (checked by explore-help.test.js).
+export const cardIds = ['E1', 'E2', 'E4'];
 
 function viewById(id) {
   return views.find((v) => v.id === id);
@@ -50,12 +55,14 @@ export default {
     }
 
     const e1 = viewById('E1');
+    const e1Help = cardHelp('E1');
     const e1Card = makeCard({
       heading: exploreEcho.ui.e1.heading,
       note: E.descriptive,
-      controls: () => [],
+      controls: () => [e1Help.help, e1Help.live],
       draw: (width) => {
         const s = store.get();
+        e1Help.say('');
         const ids = selectedIds(s);
         if (!s.data || ids.length < 2) return messageSvg(width, ui.noTwo, E.tabTitle);
         const scan = scanFor(s);
@@ -65,18 +72,22 @@ export default {
         const outcomes = [...new Set(scan.result.rows.filter((r) => r.exposure === ids[0]).map((r) => r.outcome))]
           .slice(0, exploreEcho.e1MaxOutcomes);
         if (outcomes.length === 0) return messageSvg(width, fill(ui.noRowsForEvent, { event }), E.tabTitle);
-        return e1.render(buildE1Real(scan.result, s.data.labels, windows, ids[0], outcomes), { width });
+        const matrix = buildE1Real(scan.result, s.data.labels, windows, ids[0], outcomes);
+        e1Help.say(liveSentence('E1', matrix, [event]));
+        return e1.render(matrix, { width });
       },
     });
     cards.push(e1Card);
 
     const e2 = viewById('E2');
+    const e2Help = cardHelp('E2');
     const e2Card = makeCard({
       heading: exploreEcho.ui.e2.heading,
       note: E.descriptive,
-      controls: () => [],
+      controls: () => [e2Help.help, e2Help.live],
       draw: (width) => {
         const s = store.get();
+        e2Help.say('');
         const ids = selectedIds(s);
         if (!s.data || ids.length < 2) return messageSvg(width, ui.noTwo, E.tabTitle);
         const [event, outcome] = ids;
@@ -97,18 +108,21 @@ export default {
         const caption = fill(exploreEcho.ui.e2.caption, { shuffles: cfg.shuffles });
         const data = buildE2Real(preparedFor(s), event, outcome, cfg);
         setNote(e2Card.card, `${check} ${fill(ui.e2.note, { event: data.eventLabel, outcome: data.outcomeLabel })}`);
+        e2Help.say(liveSentence('E2', data));
         return e2.render(data, { width, caption, desc: exploreEcho.ui.e2.desc });
       },
     });
     cards.push(e2Card);
 
     const e4 = viewById('E4');
+    const e4Help = cardHelp('E4');
     const e4Card = makeCard({
       heading: exploreEcho.ui.e4.heading,
       note: E.descriptive,
-      controls: () => [],
+      controls: () => [e4Help.help, e4Help.live],
       draw: (width) => {
         const s = store.get();
+        e4Help.say('');
         const ids = selectedIds(s);
         if (!s.data || ids.length < 2) return messageSvg(width, ui.noTwo, E.tabTitle);
         const event = s.data.labels[ids[0]].text;
@@ -116,6 +130,7 @@ export default {
         const days = picked ? picked.days : viewSettings.eventStudy.defaultWindow;
         const data = buildE4Real(viewDataFor(s), ids[0], days);
         setNote(e4Card.card, fill(ui.e4.note, { event, window: days }));
+        e4Help.say(liveSentence('E4', data));
         if (data.nEvents === 0) return messageSvg(width, fill(ui.noEvents, { event }), E.tabTitle);
         return e4.render(data, { width });
       },

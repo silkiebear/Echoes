@@ -36,6 +36,21 @@ function allStrings(d) {
   return [d.head, d.effect, d.verdict, d.shift ?? '', d.technical, ...d.warnings.flatMap((w) => [w.name, w.text])];
 }
 
+// Text groups (phase 4e, 4e.2): every kind has a caption, every how-to paragraph has a kind (the lists have the same
+// length), and the two caution sentences of the plain summary are the ones the scan puts in "Be careful".
+test('text groups: a caption for every kind, a kind for every how-to paragraph, the cautions are summary lines', () => {
+  const kinds = ['what', 'how', 'check', 'numbers', 'care'];
+  for (const kind of kinds) assert.ok(typeof ui.groups.captions[kind] === 'string' && ui.groups.captions[kind].length > 0, `caption ${kind}`);
+  assert.equal(ui.groups.howToKind.length, ui.howToRead.length, 'one kind per how-to paragraph');
+  for (const kind of ui.groups.howToKind) assert.ok(kinds.includes(kind), `kind ${kind}`);
+  const summary = plainSummary({ ...META, discoveries: 0, discoveriesLongRuns: 0, up: 0, down: 0, noDirection: 0, byWindow: windows.map(() => 0) }, windows, stats);
+  assert.ok(summary.includes(ui.plainSummary.caution), 'caution line in the summary');
+  assert.ok(summary.includes(ui.plainSummary.limits), 'limits line in the summary');
+  const captions = Object.values(ui.groups.captions);
+  assert.equal(new Set(captions).size, captions.length, 'captions are distinct');
+  assert.ok(captions.every((c) => !BANNED.test(c)), 'captions avoid the statistics words');
+});
+
 test('example row (n 61, rate ratio 1.96, difference 0.29, q and placebo null): fail, plain effect, technical line says not kept and not run', () => {
   const d = describe({ flags: NULL_FLAGS, longRuns: false });
   assert.equal(d.verdictKind, 'fail', 'kind');

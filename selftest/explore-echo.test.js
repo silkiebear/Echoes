@@ -19,6 +19,11 @@ import { toViewData } from '../core/view-data.js';
 import { buildE1Real, buildE2Real, buildE4Real } from '../core/echo-real.js';
 import * as diag from '../core/diag.js';
 import e1View from '../views/e1-echo-matrix.js';
+import e2View from '../views/e2-echo-curves.js';
+import e4View from '../views/e4-before-after.js';
+import { messageSvg } from '../core/explore-kit.js';
+import { textBox, overlaps, insideView, estimateWidth, wrapText } from '../core/textfit.js';
+import { exploreEcho } from '../config/explore-echo.js';
 
 const LAGS = [1, 2, 3];
 // Few shuffles keep the Node test fast; the band itself is not compared with counts.
@@ -141,4 +146,93 @@ test('E views real: after a label is drawn, the diagnostics without data section
   } finally {
     diag.restore(snapshot);
   }
+});
+
+// Message wrap (4e.0.2): every <text> of the message as an estimated box, as in view-data.test.js.
+const MESSAGE_WIDTHS = [280, 320, 900];
+function textBoxesOf(svg) {
+  const [, width, height] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  const boxes = [];
+  const re = /<text x="([^"]*)" y="([^"]*)" dy="[^"]*" class="[^"]*" text-anchor="([^"]*)" font-size="([^"]*)">([\s\S]*?)<\/text>/g;
+  for (const m of svg.matchAll(re)) boxes.push(textBox(Number(m[1]), Number(m[2]), m[5], Number(m[4]), m[3]));
+  return { width: Number(width), height: Number(height), boxes };
+}
+
+// Every string under a config object, found by walking the objects (so a new message key is covered without a list).
+function stringsOf(value, out = []) {
+  if (typeof value === 'string') out.push(value);
+  else if (value && typeof value === 'object') for (const v of Object.values(value)) stringsOf(v, out);
+  return out;
+}
+
+test('messageSvg: a 200-character message and a 60-character unbroken word wrap inside the view at 280, 320 and 900 px, no overlap', () => {
+  const long = Array.from({ length: 25 }, () => 'message').join(' ');
+  const unbroken = 'x'.repeat(60);
+  const failures = [];
+  for (const text of [long, unbroken, ...stringsOf(explore.ui), ...stringsOf(exploreEcho.ui)]) {
+    for (const width of MESSAGE_WIDTHS) {
+      const { width: w, height: h, boxes } = textBoxesOf(messageSvg(width, text, 'message'));
+      if (w !== width) failures.push(`${text.slice(0, 20)} at ${width}: viewBox width ${w}`);
+      boxes.forEach((box, i) => {
+        if (!insideView(box, w, h)) failures.push(`${text.slice(0, 20)} at ${width}: line ${i} outside the view`);
+        for (const other of boxes.slice(i + 1)) if (overlaps(box, other)) failures.push(`${text.slice(0, 20)} at ${width}: lines overlap`);
+      });
+    }
+  }
+  assert.deepEqual(failures.slice(0, 5), [], 'message layout');
+});
+
+
+
+// E1, E2 and E4 texts wrap (phase 4e): long labels and captions give several lines, and every text box is inside its view
+// at 280, 320 and 900 px. Fabricated data, so the width is the only input that changes.
+const LONG_LABEL = 'Late coffee and a long outcome name that has to wrap over several lines in the card';
+test('E1, E2 and E4 texts wrap: long labels and captions stay inside their view at 280, 320 and 900 px', () => {
+  // The unbroken 60-character labels have no space: they must be cut, not run off the view (phase 4e, long-word fix).
+  const UNBROKEN = 'x'.repeat(60);
+  const e1 = {
+    outcomes: [{ id: 0, label: LONG_LABEL }, { id: 1, label: 'Short' }, { id: 2, label: UNBROKEN }],
+    windows: windows.map((w) => ({ id: w.id, label: w.label })),
+    cells: [0, 1, 2].map(() => windows.map(() => ({ rr: 1.2, diff: 0.1, nExposed: 9, flags: [], forced: [] }))),
+  };
+  const e2 = {
+    eventLabel: UNBROKEN,
+    outcomeLabel: LONG_LABEL,
+    baseline: 0.2,
+    points: Array.from({ length: 14 }, (_, i) => ({ day: i + 1, rate: 0.2, lo: 0.1, hi: 0.3, n: 5 })),
+  };
+  const e4 = {
+    eventLabel: LONG_LABEL,
+    windowDays: 3,
+    nEvents: 12,
+    rows: [
+      { outcomeLabel: LONG_LABEL, before: 0.1, after: 0.2, diff: 0.1, flags: ['lowSample'] },
+      { outcomeLabel: 'Short', before: 0.2, after: 0.1, diff: -0.1, flags: ['lowSample'] },
+      { outcomeLabel: UNBROKEN, before: 0.2, after: 0.1, diff: -0.1, flags: [] },
+    ],
+  };
+  const failures = [];
+  for (const width of WIDTHS_E) {
+    const svgs = { E1: e1View.render(e1, { width }), E2: e2View.render(e2, { width }), E4: e4View.render(e4, { width }) };
+    for (const [name, svg] of Object.entries(svgs)) {
+      const { width: w, height: h, boxes } = textBoxesOf(svg);
+      boxes.forEach((box, i) => {
+        if (!insideView(box, w, h)) failures.push(`${name} at ${width}: text ${i} outside the view`);
+      });
+    }
+    const titleLines = (svgs.E2.match(/class="t" text-anchor="start"/g) || []).length;
+    if (titleLines < 2) failures.push(`E2 at ${width}: the long title is ${titleLines} line(s)`);
+  }
+  assert.deepEqual(failures.slice(0, 5), [], 'texts inside the views');
+});
+const WIDTHS_E = [280, 320, 900];
+
+test('wrapText: a word wider than the line is cut into pieces that fit, no character lost; normal text wraps as before', () => {
+  const word = 'x'.repeat(60);
+  const lines = wrapText(word, 12, 264);
+  assert.ok(lines.length > 1, 'more than one line');
+  assert.ok(lines.every((line) => estimateWidth(line, 12) <= 264), 'each piece fits');
+  assert.equal(lines.join(''), word, 'no character lost');
+  assert.deepEqual(wrapText('one two three four', 12, 60), ['one two', 'three', 'four'], 'whole words, greedy');
+  assert.deepEqual(wrapText('', 12, 60), [], 'empty text');
 });

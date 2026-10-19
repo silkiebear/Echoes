@@ -75,14 +75,15 @@ function render(data, opts = {}) {
   body += svgText(x0, axisY, monthYear(data.dates[first]), 't-muted', 'start', smallFontPx);
   body += svgText(x0 + plotW, axisY, monthYear(data.dates[data.span - 1]), 't-muted', 'end', smallFontPx);
 
-  // With a settings scale the band's names are printed under the axis (SPEC 12: a colour is never the only cue).
+  // With a settings scale the band's names are printed under the axis (SPEC 12: a colour is never the only cue),
+  // best first, wrapped to the card width (4e.0.1).
   let key = { svg: '', width: 0 };
   let bottom = axisY + smallFontPx / 2;
   if (scale) {
     const keyY = bottom + pad;
-    key = scaleLegend(x0, keyY, scale);
+    key = scaleLegend(x0, keyY, scale, (opts.width || viewSettings.defaultWidth) - x0 - pad);
     body += key.svg;
-    bottom = keyY + viewSettings.time.moodSwatch;
+    bottom = keyY + key.height;
   }
 
   return svgDoc({

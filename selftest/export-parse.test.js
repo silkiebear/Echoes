@@ -51,8 +51,9 @@ function checkRoundTrip(opts, delimiter, bom, crlf) {
     'same label texts',
   );
   const moodOfDay = new Map(gen.days.map((d) => [d.date, d.mood]));
+  const names = viewSettings.time.moodNames;
   for (const e of data.entries) {
-    const name = viewSettings.time.moodNames[moodOfDay.get(data.days[e.day].date) - 1];
+    const name = names[names.length - moodOfDay.get(data.days[e.day].date)];
     assert.equal(data.moodNames[e.moods[0]], name, 'mood name of the assigned day');
   }
   assert.equal(stats.delimiter, delimiter, 'delimiter detected');

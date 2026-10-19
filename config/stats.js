@@ -270,5 +270,17 @@ export const stats = {
       'Warnings name a reason for caution, each with a short explanation. Read every warning before you trust a row.',
       'This finds patterns in your logs, not causes. "Show technical numbers" adds the figures behind each row, each with its meaning.',
     ],
+    // Text groups (phase 4e, 4e.2): the caption word shown on each group, and the group of each how-to paragraph (one
+    // entry per howToRead text, in order; a test checks the lengths). Captions are the only text here for the groups.
+    groups: {
+      captions: {
+        what: 'What it shows',
+        how: 'How to read it',
+        check: 'Check for chance',
+        numbers: 'Numbers',
+        care: 'Be careful',
+      },
+      howToKind: ['what', 'how', 'numbers', 'check', 'care', 'how'],
+    },
   },
 };

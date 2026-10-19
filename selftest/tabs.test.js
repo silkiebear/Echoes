@@ -90,6 +90,19 @@ test('placement (4c): Mood order and the check card are in Tools; Echo scan is t
   assert.equal(dataByOrder[dataByOrder.length - 1], 'echo-scan', `last Data module by order is ${dataByOrder.at(-1)}`);
 });
 
+test('placement (4e.1): the glossary card is the first module of Explore by order', async () => {
+  const explore = tabs.find((t) => t.id === 'explore');
+  assert.ok(explore.modules.includes('explore-help'), 'explore-help not in Explore');
+  const base = new URL('../modules/', import.meta.url);
+  const orders = new Map();
+  for (const path of manifest) {
+    const mod = (await import(new URL(path, base).href)).default;
+    orders.set(mod.id, mod.order);
+  }
+  const byOrder = [...explore.modules].sort((a, b) => orders.get(a) - orders.get(b));
+  assert.equal(byOrder[0], 'explore-help', `first Explore module by order is ${byOrder[0]}`);
+});
+
 test('initialTab: a stored id that exists is used; a missing, unknown or null id falls back to the default', () => {
   assert.ok(!TAB_IDS.includes('scan'), 'the scan tab is still in the map');
   assert.equal(initialTab(TAB_IDS, 'tools', defaultTab), 'tools', 'stored id ignored');

@@ -125,3 +125,77 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
+/* "How to read this" block and "In this chart" line (4e.1). The text group classes (grp, grp-what, ...) are in
+   scan-plain.css (4e.2). [hidden] is repeated because the display rules below would override the attribute. */
+.help {
+  margin: 0 0 var(--space-1);
+  min-width: 0;
+}
+
+.help-toggle {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0 var(--space-1);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+  cursor: pointer;
+}
+
+.help-body {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  min-width: 0;
+}
+
+.help-body[hidden],
+.explain-live[hidden] {
+  display: none;
+}
+
+.help-link,
+.explain-live-text,
+.glossary dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.help-link {
+  color: var(--text-muted);
+}
+
+.explain-live-caption {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
+.explain-live {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0 0 var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.glossary {
+  margin: 0;
+  min-width: 0;
+}
+
+.glossary dt {
+  margin-top: var(--space-1);
+  font-weight: bold;
+}
+
+.glossary dd {
+  margin-left: 0;
+}

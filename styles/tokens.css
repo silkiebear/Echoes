@@ -27,7 +27,25 @@
   --seq-3: #3f7fc0;
   --seq-4: #74a9e0;
   --seq-5: #bcd9f5;
-  --build: "0.9.0";
+  /* Text groups (phase 4e, 4e.2). Accent = border and caption colour; tint = background of the group. Checked by
+     selftest\palette.test.js, which measures hue distance (HSL hue, at least 35 degrees from each mood preset and each
+     diverging endpoint), contrast (WCAG relative luminance) and the tint against the card. Choices: violet is hue 262,
+     plum is hue 320 (grp-check shares plum, with a solid border instead of double). Slate (grp-numbers) is hue 161 at
+     10 percent saturation: a blue-grey hue of about 215 is within 35 degrees of the diverging blue, so the slate sits in
+     the only window between the mood green (about 124) and the mood blue (about 199). Care has no hue (achromatic).
+     Light values are the same hues, darker accents. Caption size is a token so the captions scale with the text. */
+  --grp-what-accent: #b89de7;
+  --grp-what-tint: #342749;
+  --grp-how-accent: #e0a3cc;
+  --grp-how-tint: #462a3d;
+  --grp-check-accent: #d879bb;
+  --grp-check-tint: #381e31;
+  --grp-numbers-accent: #b6c3bf;
+  --grp-numbers-tint: #35413d;
+  --grp-care-accent: #b8b8b8;
+  --grp-care-tint: #404040;
+  --grp-caption-size: 0.875rem;
+  --build: "0.9.1";
 }
 
 :root[data-theme="light"] {
@@ -47,6 +65,16 @@
   --seq-3: #8fb8e3;
   --seq-4: #4f8bcb;
   --seq-5: #1f5fa0;
+  --grp-what-accent: #5d36a1;
+  --grp-what-tint: #f3effb;
+  --grp-how-accent: #993377;
+  --grp-how-tint: #faf0f7;
+  --grp-check-accent: #8e2970;
+  --grp-check-tint: #f5e5f0;
+  --grp-numbers-accent: #53655f;
+  --grp-numbers-tint: #ebefee;
+  --grp-care-accent: #616161;
+  --grp-care-tint: #ebebeb;
 }
 
 :root[data-theme="dark"] {
@@ -61,4 +89,14 @@
   --diverge-neg: #3a7bd5;
   --diverge-pos: #e8862e;
   color-scheme: dark;
+  --grp-what-accent: #b89de7;
+  --grp-what-tint: #342749;
+  --grp-how-accent: #e0a3cc;
+  --grp-how-tint: #462a3d;
+  --grp-check-accent: #d879bb;
+  --grp-check-tint: #381e31;
+  --grp-numbers-accent: #b6c3bf;
+  --grp-numbers-tint: #35413d;
+  --grp-care-accent: #b8b8b8;
+  --grp-care-tint: #404040;
 }

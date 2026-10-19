@@ -12,9 +12,14 @@ import { buildHourGrid, buildDial } from '../core/period-demo.js';
 import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 import { formatNumber } from '../core/format.js';
 import { viewDataFor, observedOf, selectedIds, fill, messageSvg, setNote } from '../core/explore-kit.js';
+import { cardHelp } from '../core/explain-kit.js';
+import { liveSentence } from '../core/explore-live.js';
 
 const T = viewSettings.time;
 const ui = explore.ui;
+
+// Help ids of the cards in this module (checked by explore-help.test.js).
+export const cardIds = ['P1', 'P2', 'P3', 'P4'];
 
 function viewById(id) {
   return views.find((v) => v.id === id);
@@ -48,18 +53,22 @@ export default {
     const p1State = { labelId: 'all', metric: 'count' };
     const p1Controls = document.createElement('div');
     p1Controls.className = 'explore-controls';
+    const p1Help = cardHelp('P1');
     const p1Card = makeCard({
       heading: `${p1.id} ${p1.title}`,
       note: ui.descriptive,
-      controls: () => [p1Controls],
+      controls: () => [p1Help.help, p1Controls, p1Help.live],
       draw: (width) => {
         const s = store.get();
+        p1Help.say('');
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         const timed = timedOf(s);
         if (timed.entries.length === 0) return messageSvg(width, ui.noTimed, ui.tabTitle);
         const labelId = p1State.labelId === 'all' ? null : Number(p1State.labelId);
         setNote(p1Card.card, fill(ui.noteP1, { untimed: untimedText(s), descriptive: ui.descriptive }));
-        return p1.render(buildHourGrid(timed, labelId, p1State.metric, T.weekStart), { width });
+        const grid = buildHourGrid(timed, labelId, p1State.metric, T.weekStart);
+        p1Help.say(liveSentence('P1', grid));
+        return p1.render(grid, { width });
       },
     });
     cards.push(p1Card);
@@ -87,19 +96,23 @@ export default {
     const p2State = { variant: p2.variants[0].id, labelId: null };
     const p2Controls = document.createElement('div');
     p2Controls.className = 'explore-controls';
+    const p2Help = cardHelp('P2');
     const p2Card = makeCard({
       heading: `${p2.id} ${p2.title}`,
       note: ui.descriptive,
-      controls: () => [p2Controls],
+      controls: () => [p2Help.help, p2Controls, p2Help.live],
       draw: (width) => {
         const s = store.get();
+        p2Help.say('');
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
         const timed = timedOf(s);
         if (timed.entries.length === 0) return messageSvg(width, ui.noTimed, ui.tabTitle);
         const ids = p2State.variant === 'b' ? selected() : [p2State.labelId];
         setNote(p2Card.card, fill(ui.noteP2, { untimed: untimedText(s), descriptive: ui.descriptive }));
-        return p2.render(buildDial(timed, ids, explore.periodic.dialBins), { variant: p2State.variant, width });
+        const dial = buildDial(timed, ids, explore.periodic.dialBins);
+        p2Help.say(liveSentence('P2', dial));
+        return p2.render(dial, { variant: p2State.variant, width });
       },
     });
     cards.push(p2Card);
@@ -120,18 +133,22 @@ export default {
       const state = { labelId: null };
       const controls = document.createElement('div');
       controls.className = 'explore-controls';
+      const help = cardHelp(view.id);
       const made = makeCard({
         heading: `${view.id} ${view.title}`,
         note: ui.descriptive,
-        controls: () => [controls],
+        controls: () => [help.help, controls, help.live],
         draw: (width) => {
           const s = store.get();
+          help.say('');
           if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
           if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
           if (!selected().includes(state.labelId)) state.labelId = selected()[0];
           const days = dayCountsOf(s.data)[state.labelId];
           setNote(made.card, fill(note, { days: formatNumber(days), descriptive: ui.descriptive }));
-          return view.render(build(observedOf(s), state.labelId), { width });
+          const data = build(observedOf(s), state.labelId);
+          help.say(liveSentence(view.id, data));
+          return view.render(data, { width });
         },
       });
       const refreshControls = (redraw) => {

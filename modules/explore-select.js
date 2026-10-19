@@ -4,10 +4,14 @@ import * as store from '../core/store.js';
 import { searchLabels, toggleSelection, dayCountsOf } from '../core/selection.js';
 import { splitLabel } from '../core/label-code.js';
 import { formatNumber } from '../core/format.js';
+import { cardHelp } from '../core/explain-kit.js';
 import { explore } from '../config/explore.js';
 
 const cfg = explore.selection;
 const ui = explore.ui;
+
+// Help ids of the cards in this module (checked by explore-help.test.js).
+export const cardIds = ['select'];
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -41,7 +45,8 @@ export default {
     const results = el('div', 'explore-results');
     const chips = el('div', 'explore-chips');
     const clear = button(ui.clear, 'explore-clear');
-    container.append(intro, search, msg, results, chips, clear);
+    const help = cardHelp('select');
+    container.append(intro, help.help, search, msg, results, chips, clear);
 
     let query = '';
 

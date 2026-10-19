@@ -35,6 +35,7 @@ export const groups = [
       './selftest/explore-ui.test.js',
       './selftest/explore-periodic-ui.test.js',
       './selftest/explore-echo-ui.test.js',
+      './selftest/explore-help-ui.test.js',
       './selftest/tabs.test.js',
       './selftest/tabs-ui.test.js',
       './selftest/scroll-anchor.test.js',
@@ -90,6 +91,8 @@ export const groups = [
       './selftest/computed-style.test.js',
       './selftest/explore-parity.test.js',
       './selftest/explore-echo.test.js',
+      './selftest/explore-help.test.js',
+      './selftest/palette.test.js',
     ],
   },
 ];

@@ -18,6 +18,7 @@ import { buildYearData, buildLanesData } from '../core/time-demo.js';
 import { textBox, insideView } from '../core/textfit.js';
 import t1 from '../views/t1-year-grid.js';
 import t2 from '../views/t2-lanes.js';
+import { scaleFill } from '../views/diverge.js';
 
 // Three moods: A is best (score 3), B 2, C 1 (score = count - order + 1).
 const SETTINGS = { moods: [{ name: 'A', order: 1 }, { name: 'B', order: 2 }, { name: 'C', order: 3 }] };
@@ -88,10 +89,10 @@ test('toViewData: entries without a time are left out of the time views and coun
   assert.equal(view.untimedCount, 1, 'untimed count');
 });
 
-test('moodScale: default presets give five entries, worst first, scores 1 to 5, and the preset colours', () => {
+test('moodScale: default presets give five entries, best first, scores 5 to 1, and the preset colours', () => {
   const scale = moodScale(defaultSettings());
-  assert.deepEqual(scale.map((e) => e.name), ['awful', 'bad', 'meh', 'good', 'yay!'], 'names worst first');
-  assert.deepEqual(scale.map((e) => e.score), [1, 2, 3, 4, 5], 'scores');
+  assert.deepEqual(scale.map((e) => e.name), ['yay!', 'good', 'meh', 'bad', 'awful'], 'names best first');
+  assert.deepEqual(scale.map((e) => e.score), [5, 4, 3, 2, 1], 'scores');
   for (const e of scale) {
     const preset = settingsConfig.moodPresets.find((m) => m.name === e.name);
     assert.equal(e.color, preset.color, `${e.name} colour`);
@@ -105,10 +106,20 @@ test('moodScale: a custom list of three moods takes its order from the settings'
     { name: 'C', order: 3, color: '#333333' },
   ] });
   assert.deepEqual(scale, [
-    { score: 1, name: 'C', color: '#333333' },
-    { score: 2, name: 'B', color: '#222222' },
     { score: 3, name: 'A', color: '#111111' },
+    { score: 2, name: 'B', color: '#222222' },
+    { score: 1, name: 'C', color: '#333333' },
   ], 'scale');
+});
+
+test('scaleFill looks up by score: a reversed scale gives the same fills (4e.0.1)', () => {
+  const scale = moodScale(defaultSettings());
+  const reversed = [...scale].reverse();
+  for (let score = 1; score <= 5; score++) {
+    assert.equal(scaleFill(score, reversed), scaleFill(score, scale), `score ${score}`);
+  }
+  assert.equal(scaleFill(5, scale), settingsConfig.moodPresets.find((m) => m.name === 'yay!').color, 'yay! is score 5');
+  assert.equal(scaleFill(9, scale), explore.mood.fallbackColor, 'a score with no entry gets the fallback');
 });
 
 test('moodScale: a colour that is not #rrggbb gets the config fallback colour', () => {
@@ -128,8 +139,8 @@ test('moodScale: __proto__ and constructor as mood names change no object', () =
   const before = JSON.stringify(settings);
   const scale = moodScale(settings);
   assert.deepEqual(scale, [
-    { score: 1, name: 'constructor', color: '#222222' },
     { score: 2, name: '__proto__', color: '#111111' },
+    { score: 1, name: 'constructor', color: '#222222' },
   ], 'entries');
   assert.equal(JSON.stringify(settings), before, 'settings unchanged');
   assert.equal(Object.getPrototypeOf(scale[0]), Object.prototype, 'entry prototype');
@@ -137,6 +148,9 @@ test('moodScale: __proto__ and constructor as mood names change no object', () =
 
 // Mood scale views (4d.0.2). The fingerprints (length and FNV-1a 32-bit hash) were taken from the markup of T1 and
 // T2 before opts.moodScale existed, on the default synthetic export with the default presets.
+// Phase 4e, user request: the no-scale key now shows the default preset names (yay! to awful, best first), so the five
+// mood fingerprints and T2 were recomputed (tools\scratch\fingerprints.mjs, same inputs). The label fingerprints did
+// not change, because they have no mood key.
 function fnv(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -147,14 +161,14 @@ function fnv(s) {
 }
 
 const BEFORE = {
-  'T1 a mood 320': [25544, '24ef6028'],
-  'T1 b mood 320': [26503, '4699af8d'],
+  'T1 a mood 320': [25600, 'e7730bbe'],
+  'T1 b mood 320': [26559, '761570d7'],
   'T1 a label 320': [25090, '12177470'],
-  'T2 320': [36947, 'f8f11872'],
-  'T1 a mood 900': [26365, 'f6d98745'],
-  'T1 b mood 900': [26548, '71c481f8'],
+  'T2 320': [36947, 'c09ac5c8'],
+  'T1 a mood 900': [26421, 'ecae3625'],
+  'T1 b mood 900': [26604, 'be11c274'],
   'T1 a label 900': [25905, 'e75b3587'],
-  'T2 900': [66882, '48126066'],
+  'T2 900': [66882, 'a0f9dd5c'],
 };
 const WIDTHS = [320, 900];
 const exported = parseExport(exportText(synth, {}), parser).data;
@@ -162,9 +176,9 @@ const demoView = toViewData(exported, defaultSettings(), explore);
 const YEAR = Number(demoView.days[demoView.days.length - 1].date.slice(0, 4));
 const PALETTE = settingsConfig.moodPalette.slice(0, viewSettings.time.moodNames.length);
 
-// Mood names with the scores of the synthetic export: the first name is score 1 (the demo names, worst first).
+// Settings from a name list, best first: the first name is order 1, so it has the top score (phase 4e).
 function scaleOf(names) {
-  return { moods: names.map((name, i) => ({ name, order: names.length - i, color: PALETTE[i] })) };
+  return { moods: names.map((name, i) => ({ name, order: i + 1, color: PALETTE[i] })) };
 }
 
 test('T1 and T2 without opts.moodScale print the demo-scale markup they printed before 4d.0.2', () => {
@@ -217,10 +231,38 @@ test('T2 with opts.moodScale: the band takes stored colours, names as text under
   assert.deepEqual(failures, [], 'T2 with the scale');
 });
 
+// The scale key wraps to the next row when the width is short (4e.0.1): every swatch inside the view at 320 and 900 px,
+// and the swatches in the order best first (yay! at the top left).
+test('T1 and T2 with the default scale: swatches inside the view and best first at 320 and 900 px', () => {
+  const settings = defaultSettings();
+  const scale = moodScale(settings);
+  const view = toViewData(exported, settings, explore);
+  const failures = [];
+  for (const width of WIDTHS) {
+    const svgs = {
+      T1: t1.render(buildYearData(view, YEAR, 0), { variant: 'a', metric: 'mood', width, moodScale: scale }),
+      T2: t2.render(buildLanesData(view, [0, 1]), { range: viewSettings.time.lanes.defaultRange, width, moodScale: scale }),
+    };
+    for (const [name, svg] of Object.entries(svgs)) {
+      const [, w] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+      const sw = viewSettings.time.moodSwatch;
+      const swatches = [...svg.matchAll(new RegExp(`<rect style="fill: [^"]*" x="([\\d.]+)" y="[\\d.]+" width="${sw}" height="${sw}"/>`, 'g'))];
+      if (swatches.length !== scale.length) failures.push(`${name} at ${width}: ${swatches.length} swatches`);
+      for (const m of swatches) {
+        if (Number(m[1]) + sw > Number(w) + viewSettings.text.tolerance) failures.push(`${name} at ${width}: swatch outside`);
+      }
+      const names = [...svg.matchAll(/class="t-muted" text-anchor="start" font-size="[^"]*">([^<]*)<\/text>/g)].map((m) => m[1]);
+      const keyNames = names.filter((n) => scale.some((e) => e.name === n));
+      if (JSON.stringify(keyNames) !== JSON.stringify(scale.map((e) => e.name))) failures.push(`${name} at ${width}: names not best first`);
+    }
+  }
+  assert.deepEqual(failures, [], 'key layout');
+});
+
 test('mood names with markup characters are escaped in the key', () => {
-  const settings = scaleOf(['<i>bad</i>', 'low', 'okay', 'good', 'great']);
+  const settings = scaleOf(['<i>awful</i>', 'bad', 'meh', 'good', 'yay!']);
   const svg = t1.render(buildYearData(toViewData(exported, settings, explore), YEAR, 0), { variant: 'a', metric: 'mood', width: 900, moodScale: moodScale(settings) });
-  assert.ok(svg.includes('&lt;i&gt;bad&lt;/i&gt;'), 'escaped name');
+  assert.ok(svg.includes('&lt;i&gt;awful&lt;/i&gt;'), 'escaped name');
   assert.ok(!svg.includes('<i>'), 'no raw markup');
 });
 
@@ -236,7 +278,7 @@ function boxesOf(svg) {
 }
 
 test('T1 and T2 with a 5-entry scale and a long mood name: every text inside its view at 320 and 900 px', () => {
-  const settings = scaleOf(['a long mood name that has to wrap over several lines', 'low', 'okay', 'good', 'great']);
+  const settings = scaleOf(['a long mood name that has to wrap over several lines', 'bad', 'meh', 'good', 'yay!']);
   const scale = moodScale(settings);
   const view = toViewData(exported, settings, explore);
   const failures = [];

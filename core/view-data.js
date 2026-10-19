@@ -25,8 +25,9 @@ export function isHexColour(value) {
   return typeof value === 'string' && HEX.test(value);
 }
 
-// The settings' moods as a scale for the views (4d.0.2): one entry per mood, worst first, so score 1 is the worst
-// (score = n - order + 1, SPEC 12). Names and colours are copied; a colour that is not #rrggbb gets the fallback.
+// The settings' moods as a scale for the views (4d.0.2, 4e.0.1): one entry per mood, best first (highest score first,
+// so the key reads yay! to awful on the default presets). score = n - order + 1 (SPEC 12). Names and colours are
+// copied; a colour that is not #rrggbb gets the fallback.
 export function moodScale(settings) {
   const moods = Array.isArray(settings?.moods) ? settings.moods : [];
   const n = moods.length;
@@ -36,7 +37,7 @@ export function moodScale(settings) {
       name: String(m.name),
       color: isHexColour(m.color) ? m.color : explore.mood.fallbackColor,
     }))
-    .sort((a, b) => a.score - b.score);
+    .sort((a, b) => b.score - a.score);
 }
 
 function dayMoods(data, settings) {

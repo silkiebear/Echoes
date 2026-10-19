@@ -13,9 +13,9 @@ import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js'
 // M2 mood setup: one mood with a long name and one with a stored colour that is not #rrggbb.
 const M2_DEMO = {
   moods: [
-    { name: 'great', order: 1, color: '#3f9e6b' },
+    { name: 'yay!', order: 1, color: '#3f9e6b' },
     { name: 'a long mood name that has to wrap over several lines', order: 2, color: '#c4553f' },
-    { name: 'bad', order: 3, color: 'not a colour' },
+    { name: 'awful', order: 3, color: 'not a colour' },
   ],
 };
 

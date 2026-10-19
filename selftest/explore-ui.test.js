@@ -18,6 +18,7 @@ const MIN_TARGET = 44;
 const PICK = 3;
 const BLACK = 'rgb(0, 0, 0)';
 const PRESET_NAMES = ['awful', 'bad', 'meh', 'good', 'yay!'];
+const BEST_FIRST = ['yay!', 'good', 'meh', 'bad', 'awful'];
 
 function rgbOf(hex) {
   return `rgb(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)})`;
@@ -65,6 +66,13 @@ if (typeof document === 'undefined') {
         for (const name of PRESET_NAMES) {
           if (!legend.includes(name)) failures.push(`${theme}: T1 legend lacks the mood name ${name}`);
         }
+        // The key lists the moods best first (4e.0.1): names in document order, and the swatch of yay! has its stored colour.
+        const keyTexts = [...cards[0].querySelectorAll('svg text')].filter((t) => PRESET_NAMES.includes(t.textContent));
+        const keyOrder = keyTexts.map((t) => t.textContent);
+        if (keyOrder.join(',') !== BEST_FIRST.join(',')) failures.push(`${theme}: T1 key reads ${keyOrder.join(', ')}`);
+        const yay = keyTexts[0] && keyTexts[0].previousElementSibling;
+        const yayHex = defaultSettings().moods.find((m) => m.name === 'yay!').color;
+        if (!yay || getComputedStyle(yay).fill !== rgbOf(yayHex)) failures.push(`${theme}: yay! swatch fill is not ${rgbOf(yayHex)}`);
         const day = cards[0].querySelector('rect[style]');
         if (!day) {
           failures.push(`${theme}: T1 has no day cell with a stored colour`);

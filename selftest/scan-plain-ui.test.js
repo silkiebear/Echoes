@@ -103,4 +103,65 @@ if (typeof document === 'undefined') {
     assert.ok(store.get().data === liveData, 'live store data unchanged');
     assert.ok(failures.length === 0, failures.join('; '));
   });
+
+  test('text groups at 320 px: caption, 3 px border, dashed and double patterns, tint other than the card; each item has its groups', async () => {
+    const ui = stats.ui;
+    const liveData = store.get().data;
+    const original = document.documentElement.getAttribute('data-theme');
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.style.width = `${WIDTH}px`;
+    document.body.append(card);
+    const failures = [];
+    const KINDS = ['grp-what', 'grp-how', 'grp-check', 'grp-numbers', 'grp-care'];
+    const kindOf = (box) => KINDS.find((c) => box.classList.contains(c));
+    const checkGroup = (theme, box) => {
+      const kind = kindOf(box);
+      const name = kind.slice(4);
+      const caption = box.firstElementChild;
+      if (!caption || !caption.classList.contains('grp-caption') || caption.textContent !== ui.groups.captions[name]) failures.push(`${theme}: ${kind} caption`);
+      const cs = getComputedStyle(box);
+      if (cs.borderLeftWidth !== '3px') failures.push(`${theme}: ${kind} border ${cs.borderLeftWidth}`);
+      const want = kind === 'grp-care' ? 'dashed' : kind === 'grp-how' ? 'double' : 'solid';
+      if (cs.borderLeftStyle !== want) failures.push(`${theme}: ${kind} border style ${cs.borderLeftStyle}, want ${want}`);
+      if (cs.backgroundColor === getComputedStyle(card).backgroundColor) failures.push(`${theme}: ${kind} tint equals the card`);
+    };
+    try {
+      echoScan.mount(card, { diag });
+      const sourceSel = card.querySelector(`select[aria-label="${ui.labels.source}"]`);
+      sourceSel.value = 'wide';
+      sourceSel.dispatchEvent(new Event('change'));
+      buttonNamed(card, ui.run).click();
+      await waitFor(() => card.querySelector('.scan-list, .scan-notice'));
+      const details = card.querySelector('details.scan-help-block');
+      if (!details) failures.push('no how-to block');
+      else details.open = true;
+
+      const items = [...card.querySelectorAll('.scan-item')];
+      if (items.length === 0) failures.push('no items');
+      for (const item of items) {
+        if (!item.querySelector(':scope > .grp-what')) failures.push('an item has no what group');
+        if (!item.querySelector(':scope > .grp-check')) failures.push('an item has no check group');
+        const care = item.querySelector(':scope > .grp-care');
+        const warned = item.querySelector('.scan-warning') !== null;
+        if (warned !== (care !== null)) failures.push(`care group ${care !== null} for warnings ${warned}`);
+      }
+
+      for (const theme of ['dark', 'light']) {
+        if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', 'light');
+        const boxes = [...card.querySelectorAll('.grp')];
+        if (boxes.length === 0) failures.push(`${theme}: no groups`);
+        for (const box of boxes) checkGroup(theme, box);
+        if (card.scrollWidth > card.clientWidth) failures.push(`${theme}: groups scroll sideways`);
+      }
+      if (details) details.open = false;
+    } finally {
+      card.remove();
+      if (original === null) document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', original);
+    }
+    assert.ok(store.get().data === liveData, 'live store data unchanged');
+    assert.ok(failures.length === 0, failures.join('; '));
+  });
 }

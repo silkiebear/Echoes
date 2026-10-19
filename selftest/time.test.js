@@ -52,7 +52,14 @@ test('mood and presence map into the colour bins 1 to 7', () => {
     const bin = moodBin(score);
     assert.ok(bin >= 1 && bin <= viewSettings.diverging.colorBins, `mood ${score} -> bin ${bin}`);
   }
-  assert.ok(moodBin(1) < moodBin(5), 'bad is a lower bin than great');
+  assert.ok(moodBin(1) < moodBin(5), 'awful is a lower bin than yay!');
   assert.equal(presenceBin(1), viewSettings.diverging.colorBins, 'present is the top bin');
   assert.equal(presenceBin(0), 1, 'absent is the lowest bin');
+});
+
+test('rolling share: no observed days, or a window of 0, gives an empty series instead of throwing (4e.0.3)', () => {
+  const id = labelIdOf(data, 'Calm M+');
+  const none = { days: [], labels: data.labels };
+  assert.deepEqual(buildRollingData(none, [id], 30).series, [], 'no observed days');
+  assert.deepEqual(buildRollingData(data, [id], 0).series, [], 'window 0');
 });

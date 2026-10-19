@@ -17,7 +17,7 @@ const WIDTHS = [320, 900];
 // M2 mood setup: a long name that wraps, and twelve moods (the most a user is likely to have).
 const M2_LONG = {
   moods: [
-    { name: 'great', order: 1, color: '#3f9e6b' },
+    { name: 'yay!', order: 1, color: '#3f9e6b' },
     { name: 'a long mood name that has to wrap over several lines', order: 2, color: '#c4553f' },
   ],
 };

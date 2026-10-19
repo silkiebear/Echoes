@@ -76,3 +76,77 @@
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+/* Text groups (phase 4e, 4e.2), shared by the Echo scan and the Explore help. Each group is a box with a 3 px left border
+   in its accent and a tint behind it. The caption word is always shown, so a group reads without colour: grp-how has a
+   double border, grp-care a dashed one, grp-what, grp-check and grp-numbers a solid one. Tokens only (tokens.css). */
+.grp {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0 0 var(--space-1);
+  padding: var(--space-1);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-wrap: break-word;
+}
+
+.grp-what {
+  border-left-color: var(--grp-what-accent);
+  background: var(--grp-what-tint);
+}
+
+.grp-how {
+  border-left-style: double;
+  border-left-color: var(--grp-how-accent);
+  background: var(--grp-how-tint);
+}
+
+.grp-check {
+  border-left-color: var(--grp-check-accent);
+  background: var(--grp-check-tint);
+}
+
+.grp-numbers {
+  border-left-color: var(--grp-numbers-accent);
+  background: var(--grp-numbers-tint);
+}
+
+.grp-care {
+  border-left-style: dashed;
+  border-left-color: var(--grp-care-accent);
+  background: var(--grp-care-tint);
+}
+
+.grp-caption {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--grp-caption-size);
+  font-weight: bold;
+}
+
+.grp-what .grp-caption {
+  color: var(--grp-what-accent);
+}
+
+.grp-how .grp-caption {
+  color: var(--grp-how-accent);
+}
+
+.grp-check .grp-caption {
+  color: var(--grp-check-accent);
+}
+
+.grp-numbers .grp-caption {
+  color: var(--grp-numbers-accent);
+}
+
+.grp-care .grp-caption {
+  color: var(--grp-care-accent);
+}
+
+.grp-text {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

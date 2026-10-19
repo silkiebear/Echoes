@@ -4,7 +4,7 @@
 // (label selection and the T views on your data, 4c.2).
 export const tabs = [
   { id: 'data', title: 'Data', modules: ['data-load', 'q1-coverage', 'q2-label-coding', 'echo-scan'] },
-  { id: 'explore', title: 'Explore', modules: ['explore-select', 'explore-time', 'explore-periodic', 'explore-echo'] },
+  { id: 'explore', title: 'Explore', modules: ['explore-help', 'explore-select', 'explore-time', 'explore-periodic', 'explore-echo'] },
   { id: 'gallery', title: 'Gallery', modules: ['gallery', 'gallery-time', 'gallery-periodic'] },
   { id: 'tools', title: 'Tools', modules: ['status', 'mood-setup', 'selftest-panel', 'diag-panel', 'diag-check', 'privacy-probe'] },
 ];

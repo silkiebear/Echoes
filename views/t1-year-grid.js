@@ -90,9 +90,9 @@ function render(data, opts = {}) {
   const keyY = grid.gridHeight + t.pad;
   const key = metric === 'label'
     ? keyRow(g.gutter, keyY, [{ bin: presenceBin(0), name: 'absent' }, { bin: presenceBin(1), name: 'present' }])
-    : scale ? scaleLegend(g.gutter, keyY, scale) : moodLegend(g.gutter, keyY);
+    : scale ? scaleLegend(g.gutter, keyY, scale, available - g.gutter - t.pad) : moodLegend(g.gutter, keyY);
   const width = Math.max(grid.gridWidth, g.gutter + key.width + t.pad);
-  const height = keyY + t.moodSwatch + t.pad;
+  const height = keyY + key.height + t.pad;
   return svgDoc({
     width,
     height,

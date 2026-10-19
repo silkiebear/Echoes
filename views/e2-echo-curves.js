@@ -24,13 +24,16 @@ function render(data, opts = {}) {
   const peak = Math.max(data.baseline, ...pts.map((p) => p.hi), ...drawn.map((p) => p.rate)) * c.yHeadroom;
   const top = peak > 0 ? peak : 1;
   const xOf = (day) => c.marginLeft + ((day - 1) / Math.max(last - 1, 1)) * plotW;
-  const yOf = (v) => c.marginTop + plotH * (1 - v / top);
-  const bottom = c.marginTop + plotH;
+  // The title wraps to the card width (4e.0.2); the plot starts below it. One line keeps marginTop, as before.
+  const titleLines = wrapText(`${data.eventLabel} to ${data.outcomeLabel}`, fontPx, width - c.marginLeft - c.pad);
+  const plotTop = Math.max(c.marginTop, titleLines.length * c.titleLineHeight);
+  const yOf = (v) => plotTop + plotH * (1 - v / top);
+  const bottom = plotTop + plotH;
 
   const band = [...pts.map((p) => `${xOf(p.day)},${yOf(p.hi)}`), ...[...pts].reverse().map((p) => `${xOf(p.day)},${yOf(p.lo)}`)];
   let body = `<polygon class="band" points="${band.join(' ')}" opacity="${c.bandOpacity}"/>`;
   body += `<line class="baseline" x1="${c.marginLeft}" y1="${yOf(data.baseline)}" x2="${c.marginLeft + plotW}" y2="${yOf(data.baseline)}"/>`;
-  body += `<line class="axis" x1="${c.marginLeft}" y1="${c.marginTop}" x2="${c.marginLeft}" y2="${bottom}"/>`;
+  body += `<line class="axis" x1="${c.marginLeft}" y1="${plotTop}" x2="${c.marginLeft}" y2="${bottom}"/>`;
   body += `<line class="axis" x1="${c.marginLeft}" y1="${bottom}" x2="${c.marginLeft + plotW}" y2="${bottom}"/>`;
   body += `<polyline class="line" points="${drawn.map((p) => `${xOf(p.day)},${yOf(p.rate)}`).join(' ')}"/>`;
   for (const p of drawn) {
@@ -59,7 +62,10 @@ function render(data, opts = {}) {
   caption.forEach((line, i) => {
     body += svgText(c.pad, captionTop + smallFontPx / 2 + i * c.captionLineHeight, line, 't-muted', 'start', smallFontPx);
   });
-  body += svgText(c.marginLeft, c.marginTop / 2, `${data.eventLabel} to ${data.outcomeLabel}`, 't', 'start', fontPx);
+  const titleFirst = plotTop / 2 - ((titleLines.length - 1) * c.titleLineHeight) / 2;
+  titleLines.forEach((line, i) => {
+    body += svgText(c.marginLeft, titleFirst + i * c.titleLineHeight, line, 't', 'start', fontPx);
+  });
 
   const height = captionTop + caption.length * c.captionLineHeight + c.pad;
   return svgDoc({

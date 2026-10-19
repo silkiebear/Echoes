@@ -13,7 +13,7 @@ import { checkToggle } from '../core/gallery-kit.js';
 import { filterControls } from '../core/scan-filter-ui.js';
 import { normalizeFilter } from '../core/stats/label-filter.js';
 import { describeRow, plainSummary } from '../core/scan-text.js';
-import { itemNode, howToNode } from '../core/scan-render.js';
+import { itemNode, howToNode, groupNode } from '../core/scan-render.js';
 import { exploreEcho } from '../config/explore-echo.js';
 import { summaryText } from '../core/scan-summary.js';
 
@@ -138,11 +138,17 @@ export default {
         return;
       }
       result.append(howTo);
-      for (const sentence of plainSummary(meta, windows, stats)) result.append(el('p', 'scan-note', sentence));
-      if (showTechnical) result.append(el('p', 'scan-note', summaryText(meta, ui)));
+      // The summary sentences are grouped: the cautions (the limits and the caution line) are "Be careful", the rest
+      // "What happened" (4e.2). The text and the order are the same as before.
+      const summary = plainSummary(meta, windows, stats);
+      const cautions = [stats.ui.plainSummary.limits, stats.ui.plainSummary.caution];
+      const note = (sentence) => el('p', 'scan-note', sentence);
+      result.append(groupNode('what', ui.groups, summary.filter((s) => !cautions.includes(s)).map(note)));
+      result.append(groupNode('care', ui.groups, summary.filter((s) => cautions.includes(s)).map(note)));
+      if (showTechnical) result.append(groupNode('numbers', ui.groups, [note(summaryText(meta, ui))]));
       if (meta.filtered !== null) result.append(el('p', 'scan-note', fill(ui.filter.matches, { filtered: meta.filtered })));
       for (const notice of notices) result.append(el('p', 'scan-notice', pillText(notice)));
-      if (showTechnical && meta.discoveriesLongRuns > 0) result.append(el('p', 'scan-note', ui.longRunNote));
+      if (showTechnical && meta.discoveriesLongRuns > 0) result.append(groupNode('care', ui.groups, [note(ui.longRunNote)]));
 
       const keep = new Set(visibleRows(rows, hideFlagged));
       const order = sortOrder(rows, view.sort).filter((i) => keep.has(i)).map((i) => ({ row: rows[i], rank: i + 1 }));

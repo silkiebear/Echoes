@@ -88,6 +88,9 @@ export function buildStripData(synth, labelIds, binCount) {
 export function buildRollingData(synth, labelIds, windowDays) {
   const n = synth.days.length;
   const w = Math.min(windowDays, n);
+  // No observed days (or a window of 0): an empty series, so T4 shows its "no data" message instead of throwing
+  // inside the store listeners (4e.0.3).
+  if (w <= 0) return { window: 0, startDate: null, endDate: null, series: [] };
   const series = labelIds.map((id) => {
     const prefix = new Int32Array(n + 1);
     for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + (synth.days[i].labels.includes(id) ? 1 : 0);

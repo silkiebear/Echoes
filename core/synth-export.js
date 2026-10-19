@@ -62,9 +62,10 @@ export function exportText(synthCfg, opts = {}) {
     labelTextById.set(l.id, l.text);
   }
 
-  // Mood name comes from the assigned day's mood value.
+  // Mood name comes from the assigned day's mood score: the names are best first, so score s is the name at n - s.
   function moodNameForDay(day) {
-    return viewSettings.time.moodNames[day.mood - 1];
+    const names = viewSettings.time.moodNames;
+    return names[names.length - day.mood];
   }
 
   // Label texts for an entry, in entry.labels order, joined with '|'.
