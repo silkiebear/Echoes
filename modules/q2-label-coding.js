@@ -5,6 +5,7 @@ import { classifyLabels, codeStats } from '../core/label-code.js';
 import { settingsConfig } from '../config/settings.js';
 import { formatPercent } from '../core/format.js';
 import * as store from '../core/store.js';
+import { moduleHelp, groupOf } from '../core/module-help.js';
 
 const MAX_ROWS = settingsConfig.q2.maxRows;
 const POSSIBLE_TAG = 'possible code, not in registry';
@@ -31,7 +32,8 @@ export default {
   phase: 2,
   order: 15,
   mount(container) {
-    const note = el('p', 'data-note', 'Labels whose last token is a code from the category registry (SPEC 11).');
+    container.append(moduleHelp('q2-label-coding'));
+    const note = groupOf('what', el('p', 'data-note', 'Labels whose last token is a code from your categories. The label naming guide below explains the codes.'));
     const body = el('div');
     container.append(note, body);
 

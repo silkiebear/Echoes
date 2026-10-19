@@ -3,6 +3,7 @@
 // after every run (SPEC 8).
 import { runAll } from '../core/harness.js';
 import { groups, groupText } from '../config/selftest-groups.js';
+import { moduleHelp } from '../core/module-help.js';
 
 const APP_ROOT = new URL('../', import.meta.url);
 
@@ -68,6 +69,7 @@ export default {
   phase: 0,
   order: 20,
   mount(container, ctx) {
+    container.append(moduleHelp('selftest-panel'));
     const diag = ctx.diag;
     diag.logStatic('INFO', 'self-test wake lock', { supported: 'wakeLock' in navigator ? 'yes' : 'no' });
     const results = new Map(); // group id -> last complete result
@@ -123,8 +125,8 @@ export default {
       status.textContent = `${label}: ${verdict}: passed ${totals.passed}, failed ${totals.failed}, skipped ${totals.skipped}`;
       list.replaceChildren();
       for (const r of run.totals) {
-        for (const f of r.failing) list.append(el('li', null, `FAIL ${f.file} :: ${f.name}: ${f.error}`));
-        for (const s of r.skips) list.append(el('li', null, `SKIP ${s.name} (${s.reason})`));
+        for (const f of r.failing) list.append(el('li', null, `Failed: ${f.name} (${f.file}): ${f.error}`));
+        for (const s of r.skips) list.append(el('li', null, `Skipped: ${s.name} (${s.reason})`));
       }
       publish();
       diag.logStatic('INFO', 'self-test finished', totals);

@@ -1,4 +1,5 @@
 import { probeNetworkBlocked, readFileStats } from '../core/probe.js';
+import { moduleHelp } from '../core/module-help.js';
 
 export default {
   id: 'privacy-probe',
@@ -6,6 +7,7 @@ export default {
   phase: 0,
   order: 40,
   mount(container, ctx) {
+    container.append(moduleHelp('privacy-probe'));
     const networkButton = document.createElement('button');
     networkButton.type = 'button';
     networkButton.textContent = 'Test network block';
@@ -29,8 +31,7 @@ export default {
     networkButton.addEventListener('click', async () => {
       networkStatus.textContent = 'Testing...';
       const result = await probeNetworkBlocked();
-      const detail = result.directive ? ` (directive: ${result.directive})` : '';
-      networkStatus.textContent = `Blocked: ${result.blocked}${detail}`;
+      networkStatus.textContent = `Blocked: ${result.blocked ? 'yes' : 'no'}`;
       ctx.diag.logStatic('INFO', 'network probe', { blocked: result.blocked });
     });
 

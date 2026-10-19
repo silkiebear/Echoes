@@ -6,6 +6,7 @@ import { applyOrder, missingMoods, orderFromTaps } from '../core/mood.js';
 import { saveCached } from '../core/settings.js';
 import { mountSvg } from '../core/svg.js';
 import * as store from '../core/store.js';
+import { moduleHelp, groupOf } from '../core/module-help.js';
 import { views } from '../views/index.js';
 
 const M2 = views.find((view) => view.id === 'M2');
@@ -29,10 +30,12 @@ export default {
   phase: 2,
   order: 13,
   mount(container) {
+    container.append(moduleHelp('mood-setup'));
     // The module keeps no reference to the container except to tell whether it is still on the page.
     const ui = { taps: [], redo: false };
 
-    const note = el('p', 'data-note');
+    const noteText = el('p', 'data-note');
+    const note = groupOf('how', noteText);
     const tapRow = el('div', 'row');
     const actions = el('div', 'row');
     const preview = el('div');
@@ -69,7 +72,7 @@ export default {
     }
 
     function renderTapping(names, missing) {
-      note.textContent = (missing.length ? 'New moods in the data. ' : '')
+      noteText.textContent = (missing.length ? 'New moods in the data. ' : '')
         + 'Tap every mood from best to worst. Each mood can be tapped once.';
       const ordered = orderFromTaps(names, ui.taps);
       for (const name of names) {
@@ -88,7 +91,7 @@ export default {
     }
 
     function renderSaved() {
-      note.textContent = 'Moods are ordered best to worst. Redo the order if the mood names in your data changed.';
+      noteText.textContent = 'Moods are ordered best to worst. Redo the order if the mood names in your data changed.';
       const redo = button('Redo order');
       redo.addEventListener('click', () => {
         ui.redo = true;
@@ -104,7 +107,7 @@ export default {
       actions.replaceChildren();
       preview.replaceChildren();
       if (!data) {
-        note.textContent = 'Load data first. The mood order is set from the moods in the data.';
+        noteText.textContent = 'Load data first. The mood order is set from the moods in the data.';
         drawPreview(settings);
         return;
       }

@@ -5,6 +5,7 @@ import { svgDoc, svgText } from './svg.js';
 import { wrapText } from './textfit.js';
 import { explore } from '../config/explore.js';
 import { viewSettings } from '../config/views.js';
+import * as store from './store.js';
 
 const message = explore.message;
 
@@ -33,7 +34,34 @@ export function fill(template, values) {
   return template.replace(/\{(\w+)\}/g, (match, key) => (Object.hasOwn(values, key) ? String(values[key]) : match));
 }
 
+// A card's label choice (4f.2; store key exploreChoice: card id to label id, or 'all' for P1). A choice is kept with the
+// selection it was made for, so a changed selection drops it: a stale id never draws. The fallback is used otherwise.
+export function choiceOf(state, cardId, fallback) {
+  const c = state.exploreChoice;
+  const selection = state.selection || [];
+  const kept = c && c.selection === selection.join(',') ? c.choices[cardId] : undefined;
+  return selection.includes(kept) ? kept : fallback;
+}
 
+export function setChoice(cardId, id) {
+  const s = store.get();
+  const selection = (s.selection || []).join(',');
+  const prev = s.exploreChoice && s.exploreChoice.selection === selection ? s.exploreChoice.choices : {};
+  store.set({ exploreChoice: { selection, choices: { ...prev, [cardId]: id } } });
+}
+
+// The "Uses:" line of a card: hidden while the card has nothing to draw.
+export function usesNode() {
+  const node = document.createElement('p');
+  node.className = 'explore-note';
+  node.hidden = true;
+  return node;
+}
+
+export function setUses(node, text) {
+  node.textContent = text;
+  node.hidden = text === '';
+}
 
 // A card with nothing to draw yet shows its message inside the chart area (same frame as the views). The text wraps
 // to the card width and the height follows the line count (4e.0.2).

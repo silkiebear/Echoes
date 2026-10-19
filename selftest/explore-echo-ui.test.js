@@ -15,8 +15,11 @@ import { synth as synthConfig } from '../config/synth.js';
 import { parser } from '../config/parser.js';
 import { buildE2Real } from '../core/echo-real.js';
 import exploreEchoModule from '../modules/explore-echo.js';
+import exploreTimeModule from '../modules/explore-time.js';
+import explorePeriodicModule from '../modules/explore-periodic.js';
 
 const WIDTH = 320;
+const MIN_TARGET = 44;
 // Measured text boxes may overrun a view edge by this much (sub-pixel rounding of the glyph box).
 const TEXT_TOLERANCE_PX = 1;
 const BLACK = 'rgb(0, 0, 0)';
@@ -82,6 +85,93 @@ if (typeof document === 'undefined') {
       });
       const ms = performance.now() - started;
       if (ms >= E2_LIMIT_MS) failures.push(`E2 pair took ${Math.round(ms)} ms, limit ${E2_LIMIT_MS}`);
+    } finally {
+      host.remove();
+      store.set(saved);
+      if (original === null) document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', original);
+    }
+    assert.equal(failures.length, 0, failures.join('; '));
+  });
+
+  // Phase 4f.2: the uniform label rule at 320 px. Every drawing card has a "Uses:" line; the visible selects are at least 44 px
+  // tall; a changed Label select (T1) and a changed Outcome select (E2) change their card; no sideways scroll; store restored.
+  test('uniform label rule at 320 px: Uses lines, 44 px selects, a changed select changes its card; store restored', async () => {
+    const original = document.documentElement.getAttribute('data-theme');
+    const saved = {
+      data: store.get().data,
+      parseStats: store.get().parseStats,
+      selection: store.get().selection,
+      pair: store.get().pair,
+      scanResult: store.get().scanResult,
+      settings: store.get().settings,
+      exploreChoice: store.get().exploreChoice,
+    };
+    const host = document.createElement('section');
+    host.style.width = `${WIDTH}px`;
+    document.body.append(host);
+    const failures = [];
+    try {
+      const parsed = parseExport(exportText(synthConfig, {}), parser).data;
+      const settings = defaultSettings();
+      const scan = await runScan({ data: parsed, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
+      const event = parsed.labels.find((l) => l.text === EVENT_TEXT).id;
+      const outcome = parsed.labels.find((l) => l.text === OUTCOME_TEXT).id;
+      const third = parsed.labels.find((l) => l.id !== event && l.id !== outcome).id;
+      const textOf = (id) => parsed.labels[id].text;
+      store.set({
+        data: parsed,
+        parseStats: null,
+        selection: [event, outcome, third],
+        pair: { window: '1d' },
+        scanResult: { rows: scan.rows, meta: scan.meta, data: parsed, settings },
+        settings,
+        exploreChoice: undefined,
+      });
+      exploreTimeModule.mount(host, {});
+      explorePeriodicModule.mount(host, {});
+      exploreEchoModule.mount(host, {});
+      const cards = [...host.querySelectorAll('section.card')];
+      const byTitle = (prefix) => cards.find((c) => c.querySelector('h2').textContent.startsWith(prefix));
+      if (cards.length !== 11) failures.push(`${cards.length} cards, expected 11`);
+      const visible = (node) => node.getClientRects().length > 0;
+      for (const theme of ['dark', 'light']) {
+        if (theme === 'dark') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', 'light');
+        for (const card of cards) {
+          const name = card.querySelector('h2').textContent.slice(0, 2);
+          const uses = [...card.querySelectorAll('p.explore-note')].find((p) => p.textContent.startsWith('Uses:'));
+          if (!uses || uses.hidden) failures.push(`${theme}: ${name}: no visible Uses line`);
+          for (const select of card.querySelectorAll('select')) {
+            if (!visible(select)) continue;
+            const height = select.getBoundingClientRect().height;
+            if (!(height >= MIN_TARGET)) failures.push(`${theme}: ${name}: select ${height} px tall`);
+          }
+          if (host.scrollWidth > host.clientWidth) failures.push(`${theme}: sideways scroll ${host.scrollWidth} > ${host.clientWidth}`);
+          if (card.scrollWidth > card.clientWidth) failures.push(`${theme}: ${name}: sideways scroll ${card.scrollWidth} > ${card.clientWidth}`);
+        }
+      }
+      document.documentElement.removeAttribute('data-theme');
+      const labelSelects = (card) => [...card.querySelectorAll('select')].filter((s) => visible(s)
+        && [...s.options].some((o) => o.textContent === textOf(third)));
+      for (const prefix of ['T1', 'P1', 'P3', 'P4', 'E1', 'E4']) {
+        if (labelSelects(byTitle(prefix)).length < 1) failures.push(`${prefix}: no label select`);
+      }
+      if (labelSelects(byTitle('E2')).length < 2) failures.push('E2: Event and Outcome selects missing');
+
+      const t1Card = byTitle('T1');
+      const t1Select = labelSelects(t1Card)[0];
+      t1Select.value = String(third);
+      t1Select.dispatchEvent(new Event('change'));
+      if (store.get().exploreChoice?.choices?.T1 !== third) failures.push('T1 select did not store the choice');
+      if (!t1Card.querySelector('.explain-live-text')?.textContent.includes(textOf(third))) failures.push('T1 live sentence does not name the new label');
+
+      const e2Card = byTitle('E2');
+      const e2Outcome = labelSelects(e2Card)[1];
+      e2Outcome.value = String(third);
+      e2Outcome.dispatchEvent(new Event('change'));
+      if (store.get().exploreChoice?.choices?.['E2-outcome'] !== third) failures.push('E2 Outcome select did not store the choice');
+      if (!e2Card.querySelector('.explain-live-text')?.textContent.includes(textOf(third))) failures.push('E2 live sentence does not name the new outcome');
     } finally {
       host.remove();
       store.set(saved);

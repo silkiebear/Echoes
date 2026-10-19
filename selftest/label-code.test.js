@@ -1,5 +1,5 @@
 import { test, assert } from '../core/harness.js';
-import { classifyLabels, codeStats } from '../core/label-code.js';
+import { classifyLabels, codeStats, readLabel, parseCode } from '../core/label-code.js';
 
 const CATEGORIES = ['S', 'F', 'B', 'H', 'A', 'W', 'P', 'E', 'T', 'D', 'M'].map((code) => ({ code, name: code, color: '#000000' }));
 
@@ -94,4 +94,75 @@ test('one token uncoded', () => {
 
 test('lowercase Domain never coded', () => {
   assert.equal(classifyLabels([{ id: 0, text: 'Walk a+' }], CATEGORIES)[0].status, 'uncoded', 'lowercase domain');
+});
+
+// Hand cases for the value marks (phase 4f.1.1). The expected values below ARE the specification. They were written
+// before the first run of the new rule; "no code" in the table means status uncoded.
+//
+//   | label            | name         | category | sub  | mark | status                                              |
+//   | Late coffee Fb-- | Late coffee  | F        | b    | --   | coded                                               |
+//   | Walk Aa++        | Walk         | A        | a    | ++   | coded                                               |
+//   | Nap S=           | Nap          | S        | none | =    | coded                                               |
+//   | Quiet day M+     | Quiet day    | M        | none | +    | coded                                               |
+//   | Gym A1+          | Gym          | A        | 1    | +    | coded                                               |
+//   | Walk Aa+-        | Walk         | A        | a    | +-   | coded                                               |
+//   | Walk Aa-+        | Walk         | A        | a    | -+   | coded                                               |
+//   | Tea Fb+--        | Tea Fb+--    | none     | none | none | no code                                             |
+//   | Tea Fb-+-        | Tea Fb-+-    | none     | none | none | no code                                             |
+//   | Tea Fb=+         | Tea Fb=+     | none     | none | none | no code                                             |
+//   | Tea Fb+++        | Tea Fb+++    | none     | none | none | no code                                             |
+//   | Tea fb-          | Tea fb-      | none     | none | none | no code                                             |
+//   | Tea FB-          | Tea FB-      | none     | none | none | no code                                             |
+//   | Tea A11+         | Tea A11+     | none     | none | none | no code                                             |
+//   | Tea Fb           | Tea Fb       | none     | none | none | no code                                             |
+//   | Tea Zb-          | Tea          | Z        | b    | -    | possible code, not in registry (Z is not a starter)  |
+//   | Fb-- (one token) | Fb--         | none     | none | none | no code (the existing rule: no space, no code)      |
+const HAND_CASES = [
+  ['Late coffee Fb--', 'Late coffee', 'F', 'b', '--', 'coded'],
+  ['Walk Aa++', 'Walk', 'A', 'a', '++', 'coded'],
+  ['Nap S=', 'Nap', 'S', null, '=', 'coded'],
+  ['Quiet day M+', 'Quiet day', 'M', null, '+', 'coded'],
+  ['Gym A1+', 'Gym', 'A', '1', '+', 'coded'],
+  ['Walk Aa+-', 'Walk', 'A', 'a', '+-', 'coded'],
+  ['Walk Aa-+', 'Walk', 'A', 'a', '-+', 'coded'],
+  ['Tea Fb+--', 'Tea Fb+--', null, null, null, 'uncoded'],
+  ['Tea Fb-+-', 'Tea Fb-+-', null, null, null, 'uncoded'],
+  ['Tea Fb=+', 'Tea Fb=+', null, null, null, 'uncoded'],
+  ['Tea Fb+++', 'Tea Fb+++', null, null, null, 'uncoded'],
+  ['Tea fb-', 'Tea fb-', null, null, null, 'uncoded'],
+  ['Tea FB-', 'Tea FB-', null, null, null, 'uncoded'],
+  ['Tea A11+', 'Tea A11+', null, null, null, 'uncoded'],
+  ['Tea Fb', 'Tea Fb', null, null, null, 'uncoded'],
+  ['Tea Zb-', 'Tea', 'Z', 'b', '-', 'possible'],
+  ['Fb--', 'Fb--', null, null, null, 'uncoded'],
+];
+
+test('hand cases: value marks ++ + +- = -+ - -- are codes; the rejected shapes are not (phase 4f.1.1)', () => {
+  HAND_CASES.forEach(([text, name, category, sub, mark, status], i) => {
+    const r = readLabel(text, CATEGORIES);
+    assert.deepEqual([r.name, r.category, r.sub, r.mark, r.status], [name, category, sub, mark, status], `row ${i} ${text}`);
+  });
+});
+
+test('parseCode: the parts of a code token, and null for shapes that are not codes', () => {
+  assert.deepEqual(parseCode('Fb--'), { category: 'F', sub: 'b', mark: '--' }, 'Fb--');
+  assert.deepEqual(parseCode('S='), { category: 'S', sub: null, mark: '=' }, 'S=');
+  assert.equal(parseCode('Fb+--'), null, 'three-part mark');
+  assert.equal(parseCode(null), null, 'null');
+});
+
+test('counts on a small hand list: coded, possible and uncoded', () => {
+  const list = ['Late coffee Fb--', 'Walk Aa++', 'Tea fb-', 'Nap S=', 'Tea Zb-', 'Calm'].map((text, id) => ({ id, text }));
+  const s = codeStats(classifyLabels(list, CATEGORIES), []);
+  assert.deepEqual([s.coded, s.possible, s.uncoded, s.total], [3, 1, 2, 6], 'counts');
+});
+
+test('__proto__ and constructor as labels: text only, no object changes', () => {
+  const list = ['__proto__', 'constructor', 'constructor Fb--'].map((text, id) => ({ id, text }));
+  const classified = classifyLabels(list, CATEGORIES);
+  assert.deepEqual(classified.map((c) => [c.name, c.status]), [['__proto__', 'uncoded'], ['constructor', 'uncoded'], ['constructor', 'coded']], 'status');
+  assert.equal(readLabel('__proto__ Fb--', CATEGORIES).category, 'F', 'read');
+  assert.equal(Object.keys(Object.prototype).length, 0, 'Object.prototype unchanged');
+  const s = codeStats(classified, [{ labels: [0, 1, 2] }]);
+  assert.equal(s.list.length, 3, 'list keeps every label');
 });

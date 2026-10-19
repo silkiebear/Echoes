@@ -58,10 +58,13 @@ export function buildE2Real(prepared, exposureId, outcomeId, cfg) {
 }
 
 // E4 (view shape of event-study-demo.js). The view data is the observed days only (as in phase 4c.3), so the window
-// counts observed days, not calendar days.
-export function buildE4Real(viewData, exposureId, windowDays) {
+// counts observed days, not calendar days. outcomeIds (4f.2) limits the outcomes compared; null means every other label.
+export function buildE4Real(viewData, exposureId, windowDays, outcomeIds = null) {
+  const labels = outcomeIds === null
+    ? viewData.labels
+    : viewData.labels.filter((l) => l.id === exposureId || outcomeIds.includes(l.id));
   const synth = {
-    labels: viewData.labels,
+    labels,
     days: viewData.observedDays.map((d, t) => ({ day: t, labels: d.labels })),
   };
   return buildE4Data(synth, exposureId, windowDays);

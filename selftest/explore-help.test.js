@@ -75,7 +75,9 @@ test('help: every card has four parts, none empty, none longer than explore.help
 test('help: every card id the Explore modules export has help, and every help entry has a module', async () => {
   const exported = [selectMod, timeMod, periodicMod, echoMod, helpMod].flatMap((m) => m.cardIds);
   assert.deepEqual(exported.filter((id) => exploreHelp.cards[id] === undefined), [], 'card ids without help');
-  assert.deepEqual(Object.keys(exploreHelp.cards).filter((id) => !exported.includes(id)), [], 'help without a card');
+  // E3 is the Gallery's own ranking card: it has no Explore twin, so its entry is kept for the Gallery (phase 4f.4).
+  const galleryOnly = ['E3'];
+  assert.deepEqual(Object.keys(exploreHelp.cards).filter((id) => !exported.includes(id) && !galleryOnly.includes(id)), [], 'help without a card');
   assert.equal(new Set(exported).size, exported.length, 'card ids are unique');
 });
 
@@ -183,7 +185,7 @@ test('live: E1, E2 and E4 sentences equal direct counts from the raw days and th
   };
 
   const scan = await runScan({ data: raw, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
-  const outcomes = [...new Set(scan.rows.filter((r) => r.exposure === ev).map((r) => r.outcome))].slice(0, exploreEcho.e1MaxOutcomes);
+  const outcomes = [...new Set(scan.rows.filter((r) => r.exposure === ev).map((r) => r.outcome))].slice(0, exploreEcho.maxOutcomes);
   const e1 = buildE1Real(scan, raw.labels, windows, ev, outcomes);
   let kept = 0;
   for (const o of outcomes) {
@@ -240,6 +242,31 @@ test('live: E1, E2 and E4 sentences equal direct counts from the raw days and th
   if (!e4s) failures.push('E4 sentence not matched');
   else expect('E4 events', Number(e4s[1]), events);
   assert.deepEqual(failures, [], 'direct counts');
+});
+
+// Non-default choice (4f.2): E1 and E4 with the other selected label as the only outcome. The counts are the same
+// recipe as above, restricted to that outcome.
+test('live: E1 and E4 with one outcome (the other selected label) equal direct counts', async () => {
+  const ev = idOf(EVENT_TEXT);
+  const out = idOf(OUTCOME_TEXT);
+  const scan = await runScan({ data: raw, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
+  const e1 = buildE1Real(scan, raw.labels, windows, ev, [out]);
+  let kept = 0;
+  for (const w of windows) {
+    const row = scan.rows.find((r) => r.exposure === ev && r.outcome === out && r.window === w.id);
+    if (row && Number.isFinite(row.rrAdj)) kept += 1;
+  }
+  const e1s = /has a scan row in (\d+) of (\d+) cells/.exec(liveSentence('E1', e1, [EVENT_TEXT]));
+  assert.ok(e1s, 'E1 sentence matched');
+  assert.equal(Number(e1s[1]), kept, 'E1 kept cells');
+  assert.equal(Number(e1s[2]), windows.length, 'E1 cells: one outcome times the windows');
+  const days = viewSettings.eventStudy.defaultWindow;
+  const one = buildE4Real(view, ev, days, [out]);
+  const all = buildE4Real(view, ev, days);
+  assert.deepEqual(one.rows.map((r) => r.outcomeLabel), [OUTCOME_TEXT], 'E4 rows: the selected outcome only');
+  assert.equal(one.nEvents, all.nEvents, 'E4 events do not depend on the outcome list');
+  const full = all.rows.find((r) => r.outcomeLabel === OUTCOME_TEXT);
+  if (full) assert.equal(one.rows[0].diff, full.diff, 'E4 change for the outcome equals the change in the full list');
 });
 
 test('live: labels named __proto__ and constructor appear as text and change no object', () => {

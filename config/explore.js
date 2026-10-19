@@ -78,6 +78,15 @@ export const explore = {
     noSelection: 'Choose labels above to draw this view.',
     noYear: 'No days in the data for this year.',
     listSep: '; ',
+    // "Uses:" line of every card (4f.2): the label or labels the card draws, named in the card. {label}, {count}, {event},
+    // {outcome} and {list} are filled with label texts (set with textContent).
+    usesOne: 'Uses: {label}.',
+    usesAll: 'Uses: all {count} selected labels.',
+    usesEventOutcomes: 'Uses: event {event}; outcomes: {list}.',
+    usesEventOutcome: 'Uses: event {event}, outcome {outcome}.',
+    usesJoin: ', ',
+    eventSelect: 'Event',
+    outcomeSelect: 'Outcome',
     // Mood day rule: a day with no mood score is drawn as its own class, not as the worst mood.
     noMoodNote: 'Grey days have no mood entry.',
   },

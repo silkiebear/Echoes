@@ -20,29 +20,29 @@ export const synth = {
     { name: 'Late coffee', code: 'F-', p: 0.30 },
     { name: 'Poor sleep', code: 'S-', p: 0.15 },
     { name: 'Alcohol', code: 'H-', p: 0.20 },
-    { name: 'Headache', code: 'B-', p: 0.12 },
+    { name: 'Headache', code: 'H-', p: 0.12 },
     { name: 'Long walk', code: 'A+', p: 0.30 },
     { name: 'Calm', code: 'M+', p: 0.25 },
     { name: 'Deadline', code: 'W-', p: 0.05 },
     { name: 'Anxious', code: 'M-', p: 0.20 },
     { name: 'Friends meetup', code: 'P+', p: 0.30 }, // weekday modifier below replaces p
     { name: 'Morning run', code: 'A+', p: 0.40 },
-    { name: 'Water intake', code: 'B+', p: 0.55 },
+    { name: 'Water intake', code: 'H+', p: 0.55 },
     { name: 'Screen time', code: 'H-', p: 0.45 },
     { name: 'Sugar snack', code: 'F-', p: 0.35 },
     { name: 'Vegetables', code: 'F+', p: 0.50 },
     { name: 'Meditation', code: 'M+', p: 0.15 },
-    { name: 'Commute', code: 'T-', p: 0.60 },
+    { name: 'Commute', code: 'W-', p: 0.60 },
     { name: 'Vivid dream', code: 'D-', p: 0.10 },
     { name: 'Lucid dream', code: 'D+', p: 0.10 },
     { name: 'Study session', code: 'W+', p: 0.40 },
-    { name: 'Hot bath', code: 'B+', p: 0.25 },
+    { name: 'Hot bath', code: 'H+', p: 0.25 },
     { name: 'Travel', code: 'E=', p: 0.12 },
     { name: 'Argument', code: 'P-', p: 0.12 },
   ],
   effects: [
     { exposure: 'Late coffee F-', outcome: 'Poor sleep S-', lagMin: 1, lagMax: 1, pBase: 0.15, pExposed: 0.50 },
-    { exposure: 'Alcohol H-', outcome: 'Headache B-', lagMin: 1, lagMax: 2, pBase: 0.12, pExposed: 0.40 },
+    { exposure: 'Alcohol H-', outcome: 'Headache H-', lagMin: 1, lagMax: 2, pBase: 0.12, pExposed: 0.40 },
     { exposure: 'Long walk A+', outcome: 'Calm M+', lagMin: 1, lagMax: 3, pBase: 0.25, pExposed: 0.45 },
     { exposure: 'Deadline W-', outcome: 'Anxious M-', lagMin: 7, lagMax: 14, pBase: 0.20, pExposed: 0.40 },
   ],
@@ -77,13 +77,13 @@ export const synth = {
   },
   // Seasonal planted effect: the label's daily probability is multiplied in these months (capped at 1). It does not
   // change the number of random draws, so the other expectations hold.
-  seasonal: { label: 'Hot bath B+', months: [12, 1, 2], multiplier: 2 },
+  seasonal: { label: 'Hot bath H+', months: [12, 1, 2], multiplier: 2 },
   expect: {
     labelCount: [20, 24],
-    // Hot bath B+ (base p 0.25): winter p is 0.50, so the winter-to-other rate ratio is about 2. Sampling noise with
+    // Hot bath H+ (base p 0.25): winter p is 0.50, so the winter-to-other rate ratio is about 2. Sampling noise with
     // about 90 winter days gives roughly +/- 20 percent, so the range is 1.6 to 2.4.
     seasonalRatio: [1.6, 2.4],
-    // Alcohol H- to Headache B- (E4, window 3 days): after rate about 0.34 (days 1 and 2 at 0.40, day 3 about 0.22),
+    // Alcohol H- to Headache H- (E4, window 3 days): after rate about 0.34 (days 1 and 2 at 0.40, day 3 about 0.22),
     // before rate 0.12, so the difference is about 0.22. Range is wide enough for sampling noise.
     alcoholHeadacheDiff3d: [0.15, 0.30],
     // Screen time H-: share of its entries in calendar hours 0 to 3. Normal(1470, 90): P(1440 <= X < 1680) is about 0.620,

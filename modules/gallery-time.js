@@ -11,6 +11,9 @@ const presets = moodScale(defaultSettings());
 import { generate } from '../core/synth.js';
 import { buildTimeData, buildYearData, buildRollingData, labelIdOf } from '../core/time-demo.js';
 import { banner, makeCard, variantButtons, selectControl } from '../core/gallery-kit.js';
+import { cardHelp } from '../core/explain-kit.js';
+import { groupOf } from '../core/module-help.js';
+import { exploreHelp } from '../config/explore-help.js';
 
 const T = viewSettings.time;
 
@@ -20,8 +23,9 @@ function yearCard(view, data, base) {
   const labelOptions = data.labels.map((l) => ({ value: l.id, label: l.text }));
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: `Calendar year ${yearData.year}, synthetic. Colour is mood (yay! to awful) or presence of the chosen label.`,
+    note: `Calendar year ${yearData.year}, made-up data. Colour is mood (yay! to awful) or presence of the chosen label.`,
     controls: (redraw) => [
+      cardHelp(view.id).help,
       variantButtons(view.variants, state, redraw),
       selectControl('Colour by', [
         { value: 'mood', label: 'Mood' },
@@ -46,6 +50,7 @@ function lanesCard(view, data) {
     heading: `${view.id} ${view.title}`,
     note: 'Ticks are days with the label; the band is mood per day (or per bucket when a range is long).',
     controls: (redraw) => [
+      cardHelp(view.id).help,
       selectControl('Range', T.lanes.ranges.map((r) => ({ value: r.id, label: r.label })), state.range, (value) => {
         state.range = value;
         redraw();
@@ -59,7 +64,7 @@ function stripCard(view, data) {
   return makeCard({
     heading: `${view.id} ${view.title}`,
     note: 'Last 12 calendar months. Bar height = share of days with the label; triangle = change against the previous month.',
-    controls: () => [],
+    controls: () => [cardHelp(view.id).help],
     draw: (width) => view.render(data, { width }),
   });
 }
@@ -71,6 +76,7 @@ function rollingCard(view, data, labelIds, initial) {
     heading: `${view.id} ${view.title}`,
     note: 'Share of days with each label in a trailing window. Shorter windows react faster and are noisier.',
     controls: (redraw) => [
+      cardHelp(view.id).help,
       selectControl('Window', T.rolling.windows.map((w) => ({ value: w, label: `${w} days` })), state.window, (value) => {
         state.window = Number(value);
         rolling = buildRollingData(data, labelIds, state.window);
@@ -92,7 +98,7 @@ export default {
     const byId = (id) => views.find((v) => v.id === id);
     const rollingIds = T.rolling.labels.map((text) => labelIdOf(data, text));
 
-    container.append(banner('Synthetic data. Not your export. Badges and bands are demo renderings, not statistics.'));
+    container.append(groupOf('care', banner(exploreHelp.gallery.banner)));
     const cards = [
       yearCard(byId('T1'), data, base.T1),
       lanesCard(byId('T2'), base.T2),

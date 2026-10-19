@@ -19,6 +19,14 @@ import { parser } from '../config/parser.js';
 import { explore } from '../config/explore.js';
 import { viewSettings } from '../config/views.js';
 import { views } from '../views/index.js';
+import { runScan } from '../core/stats/run.js';
+import { prepare } from '../core/stats/prepare.js';
+import { stats } from '../config/stats.js';
+import { windows } from '../config/windows.js';
+import { exploreEcho } from '../config/explore-echo.js';
+import { buildE1Real, buildE2Real, buildE4Real } from '../core/echo-real.js';
+import { fill } from '../core/explore-kit.js';
+import { outcomesOf } from '../modules/explore-echo.js';
 import * as diag from '../core/diag.js';
 
 const PARITY_LABELS = 5;
@@ -111,6 +119,61 @@ test('P3 and P4 counts add up to the days the label is present on (round trip)',
     assert.equal(weekdays, present, `${label.text}: P3 sum`);
     assert.equal(months, present, `${label.text}: P4 sum`);
   }
+});
+
+// E cards on the default export with the default choices (4f.2). Each entry is "length hash" (FNV-1a 32-bit of the markup).
+// BEFORE: recorded from the 4e builders and views before the change. AFTER: the same inputs with the 4f.2 outcome lists
+// (E1 and E4: the other selected label only). E2 is unchanged by design, so it must match BEFORE.
+const PARITY_BEFORE_4E = {
+  'E1@320': '9838 52176e0a', 'E2@320': '4142 fe47cd3b', 'E4@320': '3924 b8b41382',
+  'E1@900': '9838 52176e0a', 'E2@900': '3952 8978df21', 'E4@900': '3792 40232669',
+};
+const PARITY_AFTER_4F2 = {
+  'E1@320': '4087 79d4ba54', 'E2@320': '4142 fe47cd3b', 'E4@320': '768 0520125b',
+  'E1@900': '4087 79d4ba54', 'E2@900': '3952 8978df21', 'E4@900': '665 9baae041',
+};
+
+function fnvOf(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+test('parity: E2 with the default choices is byte-identical to 4e; E1 and E4 match the 4f.2 outcome rule', async () => {
+  const parsed = parseExport(exportText(synthConfig, {}), parser).data;
+  const settings = defaultSettings();
+  const scan = await runScan({ data: parsed, settings }, { mode: 'fast', cfg: { ...stats, scanTest: 'stratified' } });
+  const event = parsed.labels.find((l) => l.text === 'Late coffee F-').id;
+  const outcome = parsed.labels.find((l) => l.text === 'Poor sleep S-').id;
+  const prepared = prepare({ data: parsed, settings });
+  const viewData = toViewData(parsed, settings, explore);
+  const days = viewSettings.eventStudy.defaultWindow;
+  const outcomes = outcomesOf([event, outcome], event);
+  const byId = (id) => views.find((v) => v.id === id);
+  const got = {};
+  for (const width of [320, 900]) {
+    got[`E1@${width}`] = (() => { const svg = byId('E1').render(buildE1Real(scan, parsed.labels, windows, event, outcomes), { width }); return `${svg.length} ${fnvOf(svg)}`; })();
+    const e2Data = buildE2Real(prepared, event, outcome, {
+      days: viewSettings.curve.days,
+      shuffles: stats.placebo.shuffles.fast,
+      seed: stats.placebo.seed,
+      labels: parsed.labels,
+      statsCfg: stats,
+    });
+    const e2Svg = byId('E2').render(e2Data, { width, caption: fill(exploreEcho.ui.e2.caption, { shuffles: stats.placebo.shuffles.fast }), desc: exploreEcho.ui.e2.desc });
+    got[`E2@${width}`] = `${e2Svg.length} ${fnvOf(e2Svg)}`;
+    const e4Svg = byId('E4').render(buildE4Real(viewData, event, days, outcomes), { width });
+    got[`E4@${width}`] = `${e4Svg.length} ${fnvOf(e4Svg)}`;
+  }
+  for (const width of [320, 900]) {
+    assert.equal(got[`E2@${width}`], PARITY_BEFORE_4E[`E2@${width}`], `E2 at ${width} px is byte-identical to 4e`);
+  }
+  for (const key of Object.keys(PARITY_AFTER_4F2)) assert.equal(got[key], PARITY_AFTER_4F2[key], `${key} matches the 4f.2 outcome rule`);
+  assert.ok(got['E1@320'] !== PARITY_BEFORE_4E['E1@320'], 'E1 changed by the outcome rule (listed in the phase report)');
+  assert.ok(got['E4@320'] !== PARITY_BEFORE_4E['E4@320'], 'E4 changed by the outcome rule (listed in the phase report)');
 });
 
 test('privacy: a card drawn with a registered label leaves no label text in diagnostics without data', () => {

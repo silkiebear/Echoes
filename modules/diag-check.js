@@ -3,6 +3,7 @@
 // The registry already wraps the body in a card with the module title, so this file adds no heading of its own.
 // The status line is an aria-live region; it reports the count after the error has been captured.
 import { diagCheck as cfg } from '../config/explore.js';
+import { moduleHelp, groupOf } from '../core/module-help.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -17,8 +18,9 @@ export default {
   phase: 4,
   order: 31,
   mount(container, ctx) {
+    container.append(moduleHelp('diag-check'));
     const diag = ctx.diag;
-    const note = el('p', 'card-sub', cfg.note);
+    const note = groupOf('care', el('p', 'card-sub', cfg.note));
     const btn = el('button', null, cfg.button);
     btn.type = 'button';
     const status = el('p', 'card-sub');

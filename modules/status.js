@@ -1,5 +1,8 @@
 import { assetStatus } from '../core/env.js';
 import { assets as assetText } from '../config/assets.js';
+import { moduleHelp } from '../core/module-help.js';
+
+const SENTENCE_BY_STATE = { ok: assetText.statusOk, stale: assetText.statusStale };
 
 export default {
   id: 'status',
@@ -8,7 +11,7 @@ export default {
   order: 10,
   mount(container, ctx) {
     const summary = document.createElement('p');
-    summary.textContent = `${ctx.config.name}, phase ${ctx.version.phase}, build ${ctx.version.build}.`;
+    summary.textContent = `${ctx.config.name}, version ${ctx.version.build}.`;
     const note = document.createElement('p');
     note.className = 'status-line';
     note.textContent = 'Data stays in this browser tab. Nothing is uploaded.';
@@ -16,19 +19,12 @@ export default {
     list.className = 'plain';
     for (const mod of ctx.modules) {
       const item = document.createElement('li');
-      item.textContent = `${mod.title} (${mod.id}, phase ${mod.phase})`;
+      item.textContent = mod.title;
       list.append(item);
     }
     const assets = assetStatus();
     const assetLine = document.createElement('p');
-    assetLine.textContent = `Assets: ${assets.text}`;
-    const lines = [summary, note, assetLine];
-    if (assets.state === 'stale') {
-      const stale = document.createElement('p');
-      stale.className = 'status-line';
-      stale.textContent = assetText.staleSentence;
-      lines.push(stale);
-    }
-    container.append(...lines, list);
+    assetLine.textContent = SENTENCE_BY_STATE[assets.state] ?? assetText.statusUnknown;
+    container.append(moduleHelp('status'), summary, note, assetLine, list);
   },
 };

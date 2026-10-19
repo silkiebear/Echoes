@@ -8,11 +8,11 @@ function idOf(text) {
   return data.labels.find((l) => l.text === text).id;
 }
 
-test('E4: planted alcohol effect gives Headache B- the largest positive difference (window 3)', () => {
+test('E4: planted alcohol effect gives Headache H- the largest positive difference (window 3)', () => {
   const e = buildE4Data(data, idOf('Alcohol H-'), 3);
   assert.ok(e.nEvents > 0, 'events exist');
   const top = e.rows[0];
-  assert.equal(top.outcomeLabel, 'Headache B-', 'top row');
+  assert.equal(top.outcomeLabel, 'Headache H-', 'top row');
   assert.ok(top.diff > 0, 'positive diff');
   assert.ok(
     top.diff >= cfg.expect.alcoholHeadacheDiff3d[0] &&

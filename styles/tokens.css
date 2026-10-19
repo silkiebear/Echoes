@@ -34,18 +34,21 @@
      10 percent saturation: a blue-grey hue of about 215 is within 35 degrees of the diverging blue, so the slate sits in
      the only window between the mood green (about 124) and the mood blue (about 199). Care has no hue (achromatic).
      Light values are the same hues, darker accents. Caption size is a token so the captions scale with the text. */
-  --grp-what-accent: #b89de7;
-  --grp-what-tint: #342749;
-  --grp-how-accent: #e0a3cc;
-  --grp-how-tint: #462a3d;
-  --grp-check-accent: #d879bb;
-  --grp-check-tint: #381e31;
+  /* Dark group colours (phase 4f.0.2). Dark accents have HSL saturation at most 40 percent and dark tints at most 22 percent,
+     so the plum and violet groups do not pull attention from the text. Hues and lightness are kept from 4e; only the
+     saturation changes. The accent stays a border and caption colour, never a fill. Light values are not changed. */
+  --grp-what-accent: #bba9da;
+  --grp-what-tint: #352c44;
+  --grp-how-accent: #daa9ca;
+  --grp-how-tint: #442c3d;
+  --grp-check-accent: #cb86b6;
+  --grp-check-tint: #352230;
   --grp-numbers-accent: #b6c3bf;
   --grp-numbers-tint: #35413d;
   --grp-care-accent: #b8b8b8;
   --grp-care-tint: #404040;
   --grp-caption-size: 0.875rem;
-  --build: "0.9.1";
+  --build: "0.9.2";
 }
 
 :root[data-theme="light"] {
@@ -89,12 +92,12 @@
   --diverge-neg: #3a7bd5;
   --diverge-pos: #e8862e;
   color-scheme: dark;
-  --grp-what-accent: #b89de7;
-  --grp-what-tint: #342749;
-  --grp-how-accent: #e0a3cc;
-  --grp-how-tint: #462a3d;
-  --grp-check-accent: #d879bb;
-  --grp-check-tint: #381e31;
+  --grp-what-accent: #bba9da;
+  --grp-what-tint: #352c44;
+  --grp-how-accent: #daa9ca;
+  --grp-how-tint: #442c3d;
+  --grp-check-accent: #cb86b6;
+  --grp-check-tint: #352230;
   --grp-numbers-accent: #b6c3bf;
   --grp-numbers-tint: #35413d;
   --grp-care-accent: #b8b8b8;

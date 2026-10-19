@@ -1,7 +1,8 @@
 // Text-group palette (phase 4e, 4e.2.2; Node and browser). The rules are the phase's: the hue of every chromatic accent is at
 // least 35 degrees from each mood preset and each diverging endpoint; violet (what) and plum (how) are at least 35 degrees
 // apart; the text and the caption (accent) reach 4.5:1 on every tint; the accent border reaches 3:1 on the card surface; the
-// tint differs from the card surface by at least 1.05:1 (WCAG relative luminance). Node checks the rules on fixed values,
+// tint differs from the card surface by at least 1.05:1 (WCAG relative luminance); in dark only, the accent saturation is
+// at most 40 percent and the tint saturation at most 22 percent (phase 4f.0.2). Node checks the rules on fixed values,
 // including planted bad ones. The browser reads the computed custom properties of tokens.css in both themes: Node has no
 // stylesheet reader here, and app code does not read files.
 import { test, skip, assert } from '../core/harness.js';
@@ -14,6 +15,9 @@ const BORDER_MIN = 3;
 const TINT_MIN = 1.05;
 // HSL saturation below this is achromatic: a hue is not defined, so the hue rule does not apply (care).
 const CHROMA_MIN = 0.05;
+// Dark only (phase 4f.0.2): HSL saturation caps so the dark groups stay soft next to the text.
+const DARK_ACCENT_SAT_MAX = 0.4;
+const DARK_TINT_SAT_MAX = 0.22;
 const GROUPS = ['what', 'how', 'check', 'numbers', 'care'];
 
 // Diverging endpoints as they are in views.css (--div-1, --div-7) and tokens.css (--diverge-neg, --diverge-pos).
@@ -28,9 +32,9 @@ const FIXED = {
   dark: {
     text: '#e7e9ee', surface: '#1e2129',
     groups: {
-      what: { accent: '#b89de7', tint: '#342749' },
-      how: { accent: '#e0a3cc', tint: '#462a3d' },
-      check: { accent: '#d879bb', tint: '#381e31' },
+      what: { accent: '#bba9da', tint: '#352c44' },
+      how: { accent: '#daa9ca', tint: '#442c3d' },
+      check: { accent: '#cb86b6', tint: '#352230' },
       numbers: { accent: '#b6c3bf', tint: '#35413d' },
       care: { accent: '#b8b8b8', tint: '#404040' },
     },
@@ -102,6 +106,11 @@ function evaluate(theme) {
       accentOnSurface: contrast(accent, theme.surface),
       tintOnSurface: contrast(tint, theme.surface),
     };
+    if (theme.name === 'dark') {
+      if (s > DARK_ACCENT_SAT_MAX) failures.push(`dark ${kind}: accent saturation ${Math.round(s * 100)} percent is above ${DARK_ACCENT_SAT_MAX * 100}`);
+      const tintSat = hueSat(tint).s;
+      if (tintSat > DARK_TINT_SAT_MAX) failures.push(`dark ${kind}: tint saturation ${Math.round(tintSat * 100)} percent is above ${DARK_TINT_SAT_MAX * 100}`);
+    }
     if (s >= CHROMA_MIN) {
       hues[kind] = h;
       const nearest = Math.min(...theme.refs.map((ref) => hueDistance(h, hueSat(ref).h)));
@@ -135,6 +144,12 @@ test('palette rules: a planted mood-like green accent fails the hue rule', () =>
   const planted = fixedTheme('dark', { what: { accent: '#2e7d32', tint: FIXED.dark.groups.what.tint } });
   const { failures } = evaluate(planted);
   assert.ok(failures.some((f) => /what: hue/.test(f)), `expected a hue failure, got ${failures.join('; ')}`);
+});
+
+test('palette rules: a planted dark accent at 70 percent saturation fails the saturation rule', () => {
+  const planted = fixedTheme('dark', { what: { accent: '#b697ed', tint: FIXED.dark.groups.what.tint } });
+  const { failures } = evaluate(planted);
+  assert.ok(failures.some((f) => /dark what: accent saturation 70/.test(f)), `expected a saturation failure, got ${failures.join('; ')}`);
 });
 
 test('palette rules: a planted tint that is too close to the text fails the text rule', () => {

@@ -150,7 +150,7 @@ test('moodScale: __proto__ and constructor as mood names change no object', () =
 // T2 before opts.moodScale existed, on the default synthetic export with the default presets.
 // Phase 4e, user request: the no-scale key now shows the default preset names (yay! to awful, best first), so the five
 // mood fingerprints and T2 were recomputed (tools\scratch\fingerprints.mjs, same inputs). The label fingerprints did
-// not change, because they have no mood key.
+// not change. Phase 4f: T2 recomputed after the demo label "Headache B-" became "Headache H-" (same length, new hash).
 function fnv(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -164,11 +164,11 @@ const BEFORE = {
   'T1 a mood 320': [25600, 'e7730bbe'],
   'T1 b mood 320': [26559, '761570d7'],
   'T1 a label 320': [25090, '12177470'],
-  'T2 320': [36947, 'c09ac5c8'],
+  'T2 320': [36947, '9fd91e62'],
   'T1 a mood 900': [26421, 'ecae3625'],
   'T1 b mood 900': [26604, 'be11c274'],
   'T1 a label 900': [25905, 'e75b3587'],
-  'T2 900': [66882, 'a0f9dd5c'],
+  'T2 900': [66882, '8f831b26'],
 };
 const WIDTHS = [320, 900];
 const exported = parseExport(exportText(synth, {}), parser).data;

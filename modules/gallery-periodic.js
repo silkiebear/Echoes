@@ -7,6 +7,9 @@ import { generate } from '../core/synth.js';
 import { buildHourGrid, buildDial } from '../core/period-demo.js';
 import { buildWeekdayProfile, buildMonthProfile } from '../core/profile-demo.js';
 import { banner, makeCard, variantButtons, selectControl, checkToggle } from '../core/gallery-kit.js';
+import { cardHelp } from '../core/explain-kit.js';
+import { groupOf } from '../core/module-help.js';
+import { exploreHelp } from '../config/explore-help.js';
 import { notes } from '../config/notes.js';
 
 const G = viewSettings.gallery;
@@ -17,8 +20,9 @@ function p1Card(view, shared, labelOptions) {
   const state = { labelId: null, metric: 'count' };
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: 'Marks by weekday and clock time (synthetic). Darker cells hold more marks. A pill appears when most entries share one time.',
+    note: 'Marks by weekday and clock time (made-up data). Darker cells hold more marks. A pill appears when most entries share one time.',
     controls: (redraw) => [
+      cardHelp(view.id).help,
       selectControl('Label', [
         { value: 'all', label: 'All labels' },
         ...labelOptions,
@@ -42,8 +46,9 @@ function p2Card(view, shared, labelOptions, dialIds, defaultLabelId) {
   const state = { variant: view.variants[0].id, labelId: defaultLabelId };
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: `Marks by hour of day (synthetic). Wedges: length = marks in the hour. Rings: one ring per label, shade = share of that label marks in the hour. ${notes.p2Rings}`,
+    note: `Marks by hour of day (made-up data). Wedges: length = marks in the hour. Rings: one ring per label, shade = share of that label marks in the hour. ${notes.p2Rings}`,
     controls: (redraw) => [
+      cardHelp(view.id).help,
       variantButtons(view.variants, state, redraw),
       selectControl('Label', labelOptions, state.labelId, (value) => {
         state.labelId = Number(value);
@@ -63,6 +68,7 @@ function profileCard(view, shared, labelOptions, defaultLabelId, rowsFor, note) 
     heading: `${view.id} ${view.title}`,
     note,
     controls: (redraw) => [
+      cardHelp(view.id).help,
       selectControl('Label', labelOptions, state.labelId, (value) => {
         state.labelId = Number(value);
         redraw();
@@ -89,7 +95,7 @@ export default {
     const defaultLabelId = shared.synth.labels.find((l) => l.text === G.periodicLabel).id;
     const byId = (id) => views.find((v) => v.id === id);
 
-    container.append(banner('Synthetic data. Not your export. Periodic views show when marks were logged; they are demo renderings, not statistics.'));
+    container.append(groupOf('care', banner(exploreHelp.gallery.banner)));
     const toggle = checkToggle('Time data: single timestamp (every entry at 12:00)', (checked) => {
       regenerate(checked);
       for (const c of cards) c.redraw();
@@ -101,7 +107,7 @@ export default {
       p2Card(byId('P2'), shared, labelOptions, dialIds, defaultLabelId),
       profileCard(byId('P3'), shared, labelOptions, idOfText('Friends meetup P+'), (s, id) => buildWeekdayProfile(s, id, T.weekStart),
         'Share of days with the label, by weekday (assigned days). Dashed line: overall share. Numbers under bars: days observed.'),
-      profileCard(byId('P4'), shared, labelOptions, idOfText('Hot bath B+'), (s, id) => buildMonthProfile(s, id),
+      profileCard(byId('P4'), shared, labelOptions, idOfText('Hot bath H+'), (s, id) => buildMonthProfile(s, id),
         'Share of days with the label, by month, years pooled. Dashed line: overall share. Numbers under bars: days observed.'),
     ];
     for (const { card } of cards) container.append(card);

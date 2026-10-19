@@ -3,7 +3,7 @@
 // Phase 4c: Mood order moved to Tools; Echo scan moved to the bottom of Data; the Scan tab is replaced by Explore
 // (label selection and the T views on your data, 4c.2).
 export const tabs = [
-  { id: 'data', title: 'Data', modules: ['data-load', 'q1-coverage', 'q2-label-coding', 'echo-scan'] },
+  { id: 'data', title: 'Data', modules: ['data-load', 'q1-coverage', 'q2-label-coding', 'label-guide', 'echo-scan'] },
   { id: 'explore', title: 'Explore', modules: ['explore-help', 'explore-select', 'explore-time', 'explore-periodic', 'explore-echo'] },
   { id: 'gallery', title: 'Gallery', modules: ['gallery', 'gallery-time', 'gallery-periodic'] },
   { id: 'tools', title: 'Tools', modules: ['status', 'mood-setup', 'selftest-panel', 'diag-panel', 'diag-check', 'privacy-probe'] },

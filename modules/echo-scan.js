@@ -14,6 +14,7 @@ import { filterControls } from '../core/scan-filter-ui.js';
 import { normalizeFilter } from '../core/stats/label-filter.js';
 import { describeRow, plainSummary } from '../core/scan-text.js';
 import { itemNode, howToNode, groupNode } from '../core/scan-render.js';
+import { moduleHelp } from '../core/module-help.js';
 import { exploreEcho } from '../config/explore-echo.js';
 import { summaryText } from '../core/scan-summary.js';
 
@@ -116,7 +117,7 @@ export default {
     const box = el('div', 'scan-box');
     box.append(controls, filterCtl.node, filterHelp, hideToggle, technicalToggle, sortHelp, progress);
     const result = el('div', 'scan-result');
-    container.append(box, result);
+    container.append(moduleHelp('echo-scan'), box, result);
 
     let scan = null; // { cancel, done } while a scan runs, else null
     let view = null; // { result, labels, sort, limit } after a run, { error: true } after a failed run, else null

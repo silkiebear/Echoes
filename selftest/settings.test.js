@@ -15,10 +15,10 @@ test('defaults are valid', () => {
   assert.deepEqual(result.settings, defaultSettings(), 'settings equal fresh defaults');
 });
 
-// 2. The 11 default categories keep their canonical code order.
-test('defaults carry the 11 category codes in order', () => {
+// 2. The 24 default categories keep their canonical code order (the tracker's groups, phase 4f).
+test('defaults carry the 24 category codes in order', () => {
   const codes = defaultSettings().categories.map((c) => c.code);
-  assert.deepEqual(codes, ['S', 'F', 'B', 'H', 'A', 'W', 'P', 'E', 'T', 'D', 'M'], 'category codes');
+  assert.deepEqual(codes, ['F', 'H', 'M', 'B', 'P', 'T', 'E', 'K', 'X', 'N', 'G', 'Y', 'W', 'A', 'S', 'I', 'O', 'C', 'U', 'L', 'Z', 'V', 'Q', 'D'], 'category codes');
 });
 
 // 3. Unknown top-level keys survive validation unchanged.

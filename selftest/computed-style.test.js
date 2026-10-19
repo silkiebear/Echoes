@@ -20,7 +20,7 @@ if (typeof document === 'undefined') {
     const echoes = computeEchoes(data, windows, viewSettings.echo);
     const idOf = (text) => labelIdOf(data, text);
     const demo = {
-      E1: buildE1Data(data, echoes, idOf('Late coffee F-'), [idOf('Poor sleep S-'), idOf('Alcohol H-'), idOf('Headache B-')], windows),
+      E1: buildE1Data(data, echoes, idOf('Late coffee F-'), [idOf('Poor sleep S-'), idOf('Alcohol H-'), idOf('Headache H-')], windows),
       E2: buildE2Data(data, idOf('Deadline W-'), idOf('Anxious M-'), viewSettings.curve),
       E3: buildE3Data(data, echoes, windows, viewSettings.ranking.maxRows),
     };
@@ -45,7 +45,7 @@ if (typeof document === 'undefined') {
         ]);
         case 'E4': return [3, 7].map((w) => ({ name: `E4 ${w}d`, data: buildE4Data(data, idOf('Alcohol H-'), w), opts: {} }));
         case 'P3': return [{ name: 'P3', data: buildWeekdayProfile(data, idOf('Friends meetup P+'), viewSettings.time.weekStart), opts: {} }];
-        case 'P4': return [{ name: 'P4', data: buildMonthProfile(data, idOf('Hot bath B+')), opts: {} }];
+        case 'P4': return [{ name: 'P4', data: buildMonthProfile(data, idOf('Hot bath H+')), opts: {} }];
         default: return [];
       }
     }

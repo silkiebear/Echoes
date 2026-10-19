@@ -5,5 +5,8 @@ export const assets = {
   okText: 'ok ({build})',
   staleText: 'STALE css={css} js={js}',
   unknownText: 'n/a',
-  staleSentence: 'Stale files: reload with the cache cleared.',
+  // Plain sentences for the Status card (phase 4f.3); the marker texts above stay for the diagnostics file.
+  statusOk: 'Page files are up to date.',
+  statusStale: 'Some page files are old: reload the page.',
+  statusUnknown: 'The state of the page files cannot be checked here.',
 };

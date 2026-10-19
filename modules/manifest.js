@@ -18,4 +18,5 @@ export const modules = [
   './explore-periodic.js',
   './explore-echo.js',
   './explore-help.js',
+  './label-guide.js',
 ];

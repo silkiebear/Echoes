@@ -23,7 +23,7 @@ const data = generate(cfg);
 const echoes = computeEchoes(data, windows, viewSettings.echo);
 const idOf = (text) => data.labels.find((l) => l.text === text).id;
 const demoData = {
-  E1: buildE1Data(data, echoes, idOf('Late coffee F-'), [idOf('Poor sleep S-'), idOf('Alcohol H-'), idOf('Headache B-')], windows),
+  E1: buildE1Data(data, echoes, idOf('Late coffee F-'), [idOf('Poor sleep S-'), idOf('Alcohol H-'), idOf('Headache H-')], windows),
   E2: buildE2Data(data, idOf('Deadline W-'), idOf('Anxious M-'), viewSettings.curve),
   E3: buildE3Data(data, echoes, windows, viewSettings.ranking.maxRows),
   ...buildTimeData(data),
@@ -31,7 +31,7 @@ const demoData = {
   P2: buildDial(data, [idOf('Late coffee F-')], 24),
   E4: buildE4Data(data, idOf('Alcohol H-'), 3),
   P3: buildWeekdayProfile(data, idOf('Friends meetup P+'), viewSettings.time.weekStart),
-  P4: buildMonthProfile(data, idOf('Hot bath B+')),
+  P4: buildMonthProfile(data, idOf('Hot bath H+')),
   M2: M2_DEMO,
 };
 const HOSTILE = '<b>&"\'';

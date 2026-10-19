@@ -123,7 +123,7 @@ export const viewSettings = {
       p2: { diameter: 220, innerRadius: 24, ringGap: 3, tickLength: 6, labelGap: 10, maxRings: 3, hourTicks: [0, 6, 12, 18] },
     },
     lanes: {
-      labels: ['Late coffee F-', 'Poor sleep S-', 'Alcohol H-', 'Headache B-', 'Long walk A+', 'Calm M+'],
+      labels: ['Late coffee F-', 'Poor sleep S-', 'Alcohol H-', 'Headache H-', 'Long walk A+', 'Calm M+'],
       ranges: [
         { id: '3m', label: '3 months', days: 92 },
         { id: '1y', label: '1 year', days: 365 },

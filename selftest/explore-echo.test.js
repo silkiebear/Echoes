@@ -21,7 +21,8 @@ import * as diag from '../core/diag.js';
 import e1View from '../views/e1-echo-matrix.js';
 import e2View from '../views/e2-echo-curves.js';
 import e4View from '../views/e4-before-after.js';
-import { messageSvg } from '../core/explore-kit.js';
+import { messageSvg, choiceOf } from '../core/explore-kit.js';
+import { outcomesOf, outcomeOf } from '../modules/explore-echo.js';
 import { textBox, overlaps, insideView, estimateWidth, wrapText } from '../core/textfit.js';
 import { exploreEcho } from '../config/explore-echo.js';
 
@@ -226,6 +227,36 @@ test('E1, E2 and E4 texts wrap: long labels and captions stay inside their view 
   assert.deepEqual(failures.slice(0, 5), [], 'texts inside the views');
 });
 const WIDTHS_E = [280, 320, 900];
+
+// Uniform label rule (4f.2). Choices are kept per card with the selection they were made for; names that are also
+// Object.prototype keys (constructor) are never looked up as choices.
+test('choices: the default is the fallback; a choice of the same selection holds; a changed selection clears it', () => {
+  assert.equal(choiceOf({ selection: [2, 3] }, 'T1', 2), 2, 'default');
+  const kept = { selection: [2, 3], exploreChoice: { selection: '2,3', choices: { T1: 3 } } };
+  assert.equal(choiceOf(kept, 'T1', 2), 3, 'kept for the same selection');
+  const changed = { selection: [2, 5], exploreChoice: { selection: '2,3', choices: { T1: 3 } } };
+  assert.equal(choiceOf(changed, 'T1', 2), 2, 'cleared when the selection changed');
+  const notSelected = { selection: [2, 3], exploreChoice: { selection: '2,3', choices: { T1: 9 } } };
+  assert.equal(choiceOf(notSelected, 'T1', 2), 2, 'an id that is not selected never draws');
+  const proto = { selection: [2], exploreChoice: { selection: '2', choices: {} } };
+  assert.equal(choiceOf(proto, 'constructor', 2), 2, 'Object.prototype names are not choices');
+});
+
+test('outcomes: E1 and E4 take the other selected labels in selection order, at most maxOutcomes', () => {
+  assert.deepEqual(outcomesOf([4, 1, 7], 4), [1, 7], 'three selected, event first');
+  assert.deepEqual(outcomesOf([0, 1], 1), [0], 'event is the second label');
+  const many = Array.from({ length: exploreEcho.maxOutcomes + 5 }, (_, i) => i + 1);
+  assert.equal(outcomesOf([0, ...many], 0).length, exploreEcho.maxOutcomes, 'cap');
+});
+
+test('outcome: E2 takes its Outcome select when that is another selected label; otherwise the first other label', () => {
+  const ids = [2, 5, 7];
+  assert.equal(outcomeOf({ selection: ids }, 2, ids), 5, 'default: the second selected label');
+  const chosen = { selection: ids, exploreChoice: { selection: '2,5,7', choices: { 'E2-outcome': 7 } } };
+  assert.equal(outcomeOf(chosen, 2, ids), 7, 'the Outcome select');
+  const same = { selection: ids, exploreChoice: { selection: '2,5,7', choices: { 'E2-outcome': 2 } } };
+  assert.equal(outcomeOf(same, 2, ids), 5, 'an outcome equal to the event falls back');
+});
 
 test('wrapText: a word wider than the line is cut into pieces that fit, no character lost; normal text wraps as before', () => {
   const word = 'x'.repeat(60);

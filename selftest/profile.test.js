@@ -14,8 +14,8 @@ function meanRate(rows, months) {
   return sum / months.length;
 }
 
-test('P4: seasonal planted effect: Hot bath B+ winter rate is about twice the other months', () => {
-  const p = buildMonthProfile(data, idOf('Hot bath B+'));
+test('P4: seasonal planted effect: Hot bath H+ winter rate is about twice the other months', () => {
+  const p = buildMonthProfile(data, idOf('Hot bath H+'));
   const winter = [11, 0, 1];
   const other = [2, 3, 4, 5, 6, 7, 8, 9, 10];
   const ratio = meanRate(p.rows, winter) / meanRate(p.rows, other);
@@ -40,7 +40,7 @@ test('P3: rows have seven weekdays and n sums to the number of days', () => {
 });
 
 test('P4: month rows have twelve months and n sums to the number of days', () => {
-  const p = buildMonthProfile(data, idOf('Hot bath B+'));
+  const p = buildMonthProfile(data, idOf('Hot bath H+'));
   assert.equal(p.rows.length, 12, 'rows');
   assert.equal(p.rows.reduce((s, r) => s + r.n, 0), data.days.length, 'n sums to days');
 });

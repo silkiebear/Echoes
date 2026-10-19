@@ -8,13 +8,16 @@ import { generate } from '../core/synth.js';
 import { computeEchoes, buildE1Data, buildE2Data, buildE3Data } from '../core/echo-demo.js';
 import { banner, makeCard, variantButtons, checkToggle, selectControl } from '../core/gallery-kit.js';
 import { buildE4Data } from '../core/event-study-demo.js';
+import { cardHelp } from '../core/explain-kit.js';
+import { groupOf } from '../core/module-help.js';
+import { exploreHelp } from '../config/explore-help.js';
 
 const g = viewSettings.gallery;
 
 const NOTES = {
   E1: `Exposure ${g.e1Exposure}. Rate ratio = outcome rate after exposure / overall outcome rate.`,
   E2: `Exposure ${g.e2Exposure}, outcome ${g.e2Outcome}, by lag in days.`,
-  E3: 'Top results by rate ratio across all synthetic exposure and outcome pairs.',
+  E3: 'Top results by rate ratio across all made-up exposure and outcome pairs.',
 };
 
 function labelId(data, text) {
@@ -45,7 +48,7 @@ function echoCard(view, viewData) {
     heading: `${view.id} ${view.title}`,
     note: NOTES[view.id] || '',
     controls: (redraw) => {
-      const nodes = [];
+      const nodes = [cardHelp(view.id).help];
       if (view.variants.length > 1) nodes.push(variantButtons(view.variants, state, redraw));
       if (view.id === 'E3') {
         nodes.push(checkToggle('Hide flagged results', (on) => {
@@ -67,8 +70,9 @@ function e4Card(view, data) {
   let e4 = buildE4Data(data, state.exposureId, state.windowDays);
   return makeCard({
     heading: `${view.id} ${view.title}`,
-    note: `Event = a day with the exposure and none in the previous ${es.gapDays} days. Bars: change in the share of days with each label, after minus before. Demo flags only.`,
+    note: `Event = a day with the exposure and none in the previous ${es.gapDays} days. Bars: change in the share of days with each label, after minus before. Flags shown here are for display only.`,
     controls: (redraw) => [
+      cardHelp(view.id).help,
       selectControl('Exposure', data.labels.map((l) => ({ value: l.id, label: l.text })), state.exposureId, (value) => {
         state.exposureId = Number(value);
         e4 = buildE4Data(data, state.exposureId, state.windowDays);
@@ -95,7 +99,7 @@ export default {
     const data = generate(synthConfig);
     const viewData = buildViewData(data);
 
-    container.append(banner('Synthetic data. Not your export. Badges marked DEMO are forced for display, not computed.'));
+    container.append(groupOf('care', banner(exploreHelp.gallery.banner)));
     const cards = [
       ...views.filter((v) => v.id.startsWith('E') && v.id !== 'E4').map((view) => echoCard(view, viewData[view.id])),
       e4Card(views.find((v) => v.id === 'E4'), data),

@@ -1,4 +1,5 @@
 import { app } from '../config/app.js';
+import { moduleHelp } from '../core/module-help.js';
 
 function firstLines(text) {
   return text.split('\n').slice(0, app.diag.previewLines).join('\n');
@@ -29,6 +30,7 @@ export default {
   phase: 0,
   order: 30,
   mount(container, ctx) {
+    container.append(moduleHelp('diag-panel'));
     const diag = ctx.diag;
 
     const include = document.createElement('input');
@@ -37,7 +39,7 @@ export default {
     const includeLabel = document.createElement('label');
     includeLabel.className = 'check';
     includeLabel.htmlFor = include.id;
-    includeLabel.append(include, document.createTextNode('Include data-derived sections'));
+    includeLabel.append(include, document.createTextNode('Include the sections that describe your data'));
 
     const downloadButton = button('Download');
     const copyButton = button('Copy');

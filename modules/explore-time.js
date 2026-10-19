@@ -9,7 +9,7 @@ import { makeCard, variantButtons, selectControl } from '../core/gallery-kit.js'
 import { dayCountsOf } from '../core/selection.js';
 import { buildYearData, buildLanesData, buildStripData, buildRollingData } from '../core/time-demo.js';
 import { formatNumber } from '../core/format.js';
-import { viewDataFor, observedOf, selectedIds, fill, messageSvg, setNote } from '../core/explore-kit.js';
+import { viewDataFor, observedOf, selectedIds, fill, messageSvg, setNote, choiceOf, setChoice, usesNode, setUses } from '../core/explore-kit.js';
 import { moodScale } from '../core/view-data.js';
 import { cardHelp } from '../core/explain-kit.js';
 import { liveSentence } from '../core/explore-live.js';
@@ -45,18 +45,21 @@ export default {
   order: 18,
   mount(container) {
     const selected = () => selectedIds(store.get());
+    const t1Label = (s) => choiceOf(s, 'T1', selectedIds(s)[0] ?? null);
     const cards = [];
 
-    // T1: one label by calendar year. The label is one of the selection; the year list comes from the data.
+    // T1: one label by calendar year. The label is one of the selection (the Label select, kept in the store choice);
+    // the year list comes from the data.
     const t1 = viewById('T1');
-    const t1State = { variant: t1.variants[0].id, metric: 'mood', labelId: null, year: null };
+    const t1State = { variant: t1.variants[0].id, metric: 'mood', year: null };
     const t1Controls = document.createElement('div');
     t1Controls.className = 'explore-controls';
+    const t1Uses = usesNode();
     const t1Help = cardHelp('T1');
     const t1Card = makeCard({
       heading: `${t1.id} ${t1.title}`,
       note: ui.descriptive,
-      controls: () => [t1Help.help, t1Controls, t1Help.live],
+      controls: () => [t1Help.help, t1Uses, t1Controls, t1Help.live],
       draw: (width) => drawT1(width),
     });
     cards.push(t1Card);
@@ -65,7 +68,6 @@ export default {
       const s = store.get();
       const years = s.data ? yearsOf(viewDataFor(s)) : [];
       if (t1State.year === null || !years.includes(t1State.year)) t1State.year = years[years.length - 1] ?? null;
-      if (!selected().includes(t1State.labelId)) t1State.labelId = selected()[0] ?? null;
       t1Controls.replaceChildren(
         variantButtons(t1.variants, t1State, redraw),
         selectControl(ui.colourLabel, [
@@ -79,9 +81,8 @@ export default {
           t1State.year = Number(value);
           redraw();
         }),
-        selectControl(ui.labelLabel, selected().map((id) => ({ value: String(id), label: s.data.labels[id].text })), String(t1State.labelId), (value) => {
-          t1State.labelId = Number(value);
-          redraw();
+        selectControl(ui.labelLabel, selected().map((id) => ({ value: String(id), label: s.data.labels[id].text })), String(t1Label(s)), (value) => {
+          setChoice('T1', Number(value));
         }),
       );
     }
@@ -89,32 +90,38 @@ export default {
     function drawT1(width) {
       const s = store.get();
       t1Help.say('');
+      setUses(t1Uses, '');
       if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
       if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
       if (t1State.year === null) return messageSvg(width, ui.noYear, ui.tabTitle);
-      const data = buildYearData(viewDataFor(s), t1State.year, t1State.labelId);
+      const labelId = t1Label(s);
+      const data = buildYearData(viewDataFor(s), t1State.year, labelId);
       const present = data.days.filter((d) => d.present === 1).length;
       setNote(t1Card.card, fill(ui.noteT1, { days: formatNumber(present), descriptive: ui.descriptive }));
-      t1Help.say(liveSentence('T1', data, textsOf(s, [t1State.labelId])));
-      return t1.render(data, { ...t1State, width, moodScale: moodScale(s.settings) });
+      setUses(t1Uses, fill(ui.usesOne, { label: textsOf(s, [labelId])[0] }));
+      t1Help.say(liveSentence('T1', data, textsOf(s, [labelId])));
+      return t1.render(data, { ...t1State, labelId, width, moodScale: moodScale(s.settings) });
     }
 
     // T2: lanes for the selection over a mood band; the range is the existing choice list.
     const t2 = viewById('T2');
     const t2State = { range: T.lanes.defaultRange };
     const t2Help = cardHelp('T2');
+    const t2Uses = usesNode();
     const t2Card = makeCard({
       heading: `${t2.id} ${t2.title}`,
       note: ui.descriptive,
-      controls: (redraw) => [t2Help.help, selectControl(ui.rangeLabel, T.lanes.ranges.map((r) => ({ value: r.id, label: r.label })), t2State.range, (value) => {
+      controls: (redraw) => [t2Help.help, t2Uses, selectControl(ui.rangeLabel, T.lanes.ranges.map((r) => ({ value: r.id, label: r.label })), t2State.range, (value) => {
         t2State.range = value;
         redraw();
       }), t2Help.live],
       draw: (width) => {
         const s = store.get();
         t2Help.say('');
+        setUses(t2Uses, '');
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
+        setUses(t2Uses, fill(ui.usesAll, { count: selected().length }));
         setNote(t2Card.card, fill(ui.noteT2, { list: listOf(s, selected()), descriptive: ui.descriptive }));
         const lanes = buildLanesData(viewDataFor(s), selected());
         t2Help.say(liveSentence('T2', lanes));
@@ -126,15 +133,18 @@ export default {
     // T3: share of observed days per calendar month, for the selection (the last 12 months).
     const t3 = viewById('T3');
     const t3Help = cardHelp('T3');
+    const t3Uses = usesNode();
     const t3Card = makeCard({
       heading: `${t3.id} ${t3.title}`,
       note: ui.descriptive,
-      controls: () => [t3Help.help, t3Help.live],
+      controls: () => [t3Help.help, t3Uses, t3Help.live],
       draw: (width) => {
         const s = store.get();
         t3Help.say('');
+        setUses(t3Uses, '');
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
+        setUses(t3Uses, fill(ui.usesAll, { count: selected().length }));
         setNote(t3Card.card, fill(ui.noteT3, { list: listOf(s, selected()), descriptive: ui.descriptive }));
         const strip = buildStripData(observedOf(s), selected(), T.strip.bins);
         t3Help.say(liveSentence('T3', strip, textsOf(s, selected())));
@@ -147,18 +157,21 @@ export default {
     const t4 = viewById('T4');
     const t4State = { window: T.rolling.defaultWindow };
     const t4Help = cardHelp('T4');
+    const t4Uses = usesNode();
     const t4Card = makeCard({
       heading: `${t4.id} ${t4.title}`,
       note: ui.descriptive,
-      controls: (redraw) => [t4Help.help, selectControl(ui.windowLabel, T.rolling.windows.map((w) => ({ value: String(w), label: `${w} days` })), String(t4State.window), (value) => {
+      controls: (redraw) => [t4Help.help, t4Uses, selectControl(ui.windowLabel, T.rolling.windows.map((w) => ({ value: String(w), label: `${w} days` })), String(t4State.window), (value) => {
         t4State.window = Number(value);
         redraw();
       }), t4Help.live],
       draw: (width) => {
         const s = store.get();
         t4Help.say('');
+        setUses(t4Uses, '');
         if (!s.data) return messageSvg(width, ui.noData, ui.tabTitle);
         if (selected().length === 0) return messageSvg(width, ui.noSelection, ui.tabTitle);
+        setUses(t4Uses, fill(ui.usesAll, { count: selected().length }));
         setNote(t4Card.card, fill(ui.noteT4, { list: listOf(s, selected()), descriptive: ui.descriptive }));
         const rolling = buildRollingData(observedOf(s), selected(), t4State.window);
         t4Help.say(liveSentence('T4', rolling, textsOf(s, selected())));
