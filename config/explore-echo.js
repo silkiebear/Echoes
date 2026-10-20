@@ -7,7 +7,7 @@ export const exploreEcho = {
   ui: {
     e1: {
       heading: 'E1 Echo matrix',
-      note: 'Outcomes by time window after the event {event}. Each cell is the adjusted rate ratio of the last Echo scan. A blank cell was not kept by that scan. Descriptive only.',
+      note: 'Outcomes by time window after the event {event}. Each cell is the adjusted rate ratio of the last Echo scan. n/a means the last scan kept no row for that pair and window. Descriptive only.',
     },
     e2: {
       heading: 'E2 Echo curve',
@@ -25,7 +25,7 @@ export const exploreEcho = {
     inScan: 'Check for chance from the last scan: {verdict}',
     notInScan: 'This pair is not in the last scan result, so no check for chance is available. The scan keeps only its strongest rows.',
     noEvents: 'No observed day with the event {event}.',
-    noRowsForEvent: 'The last scan has no row with the event {event}, so E1 has no cells to show.',
+    noRowsForEvent: 'The last scan has no row with the event {event}, so E1 has no cells to show. The scan keeps only its strongest rows, so most labels have none. Choose an event from the scan results (use "Select this pair in Explore"), or run the scan again in Data.',
     pairButton: 'Select this pair in Explore',
     pairNoData: 'Load your export to select a pair.',
   },

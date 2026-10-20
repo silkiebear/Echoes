@@ -28,6 +28,14 @@ const E2_LIMIT_MS = 2000;
 const EVENT_TEXT = 'Late coffee F-';
 const OUTCOME_TEXT = 'Poor sleep S-';
 
+// Names the control in a size failure, so a failure seen only on one device can be traced to its element (phase 4g.1).
+function describeSelect(select, height) {
+  const style = getComputedStyle(select);
+  const parent = select.parentElement;
+  return `${select.tagName.toLowerCase()} class "${select.className}" in parent class "${parent ? parent.className : ''}": `
+    + `${height} px tall, computed min-height ${style.minHeight}, height ${style.height}, appearance ${style.appearance}`;
+}
+
 if (typeof document === 'undefined') {
   skip('E views on real data at 320 px: cards, no sideways scroll, no black fill, E2 within the limit; store restored', 'browser only');
 } else {
@@ -145,7 +153,7 @@ if (typeof document === 'undefined') {
           for (const select of card.querySelectorAll('select')) {
             if (!visible(select)) continue;
             const height = select.getBoundingClientRect().height;
-            if (!(height >= MIN_TARGET)) failures.push(`${theme}: ${name}: select ${height} px tall`);
+            if (!(height >= MIN_TARGET)) failures.push(`${theme}: ${name}: ${describeSelect(select, height)}`);
           }
           if (host.scrollWidth > host.clientWidth) failures.push(`${theme}: sideways scroll ${host.scrollWidth} > ${host.clientWidth}`);
           if (card.scrollWidth > card.clientWidth) failures.push(`${theme}: ${name}: sideways scroll ${card.scrollWidth} > ${card.clientWidth}`);

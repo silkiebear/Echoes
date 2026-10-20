@@ -7,6 +7,7 @@ import { svgDoc, svgText } from '../core/svg.js';
 import { viewSettings } from '../config/views.js';
 import { formatPercent } from '../core/format.js';
 import { monthYear } from '../core/time-demo.js';
+import { seriesStyle, seriesMarkerSvg } from './series.js';
 
 const R = viewSettings.time.rolling;
 const pad = viewSettings.time.pad;
@@ -34,6 +35,14 @@ function bucketAverage(values, maxPoints) {
   return out;
 }
 
+// Evenly spaced point indices for the markers of one line, from the first point to the last.
+function markerIndices(n, count) {
+  const shown = Math.min(count, n);
+  const out = [];
+  for (let i = 0; i < shown; i += 1) out.push(shown === 1 ? 0 : Math.round((i * (n - 1)) / (shown - 1)));
+  return out;
+}
+
 function render(data, opts = {}) {
   const available = opts.width || viewSettings.defaultWidth;
   const plotW = Math.max(R.minPlotWidth, available - R.marginLeft - R.marginRight);
@@ -50,10 +59,10 @@ function render(data, opts = {}) {
 
   let body = '';
   data.series.forEach((s, k) => {
-    const bin = R.seriesBins[k];
-    const rowY = legendTop + k * R.legendRowHeight;
-    body += `<rect class="bin-${bin}" x="${pad}" y="${rowY + (R.legendRowHeight - R.swatch) / 2}" width="${R.swatch}" height="${R.swatch}"/>`;
-    body += svgText(pad + R.swatch + smallGap, rowY + R.legendRowHeight / 2, s.text, 't');
+    const style = seriesStyle(k);
+    const cy = legendTop + k * R.legendRowHeight + R.legendRowHeight / 2;
+    body += `<g data-series="${k}" data-role="key" data-marker="${style.marker}">${seriesMarkerSvg(style, pad + R.swatch / 2, cy)}</g>`;
+    body += svgText(pad + R.swatch + smallGap, cy, s.text, 't');
   });
 
   body += `<line class="axis" x1="${R.marginLeft}" y1="${plotTop}" x2="${R.marginLeft}" y2="${plotBottom}"/>`;
@@ -61,8 +70,13 @@ function render(data, opts = {}) {
   body += svgText(R.marginLeft - smallGap, yOf(0), formatPercent(0), 't-muted', 'end', smallFontPx);
   body += svgText(R.marginLeft - smallGap, yOf(yMax / R.yHeadroom), formatPercent(yMax / R.yHeadroom), 't-muted', 'end', smallFontPx);
   series.forEach((s, k) => {
+    const style = seriesStyle(k);
     const points = s.values.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
-    body += `<polyline class="line line-${R.seriesBins[k]}" points="${points}" style="stroke-width:${R.lineWidth}px"/>`;
+    body += `<g data-series="${k}" data-role="line"><polyline class="line ${style.cls}" points="${points}" style="stroke-width:${R.lineWidth}px"/>`;
+    for (const i of markerIndices(s.values.length, R.perLine)) {
+      body += seriesMarkerSvg(style, xOf(i), yOf(s.values[i]), ` data-mark="${k}"`);
+    }
+    body += '</g>';
   });
 
   const axisY = plotBottom + pad + smallFontPx / 2;

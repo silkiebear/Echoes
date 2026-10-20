@@ -44,6 +44,11 @@ button[aria-pressed="true"] {
   margin-top: var(--space-1);
 }
 
+.field-label input {
+  margin: 0 0 0 var(--space-1);
+  max-width: 100%;
+}
+
 .table-wrap {
   overflow-x: auto;
   max-width: 100%;

@@ -2,11 +2,15 @@
 // least 35 degrees from each mood preset and each diverging endpoint; violet (what) and plum (how) are at least 35 degrees
 // apart; the text and the caption (accent) reach 4.5:1 on every tint; the accent border reaches 3:1 on the card surface; the
 // tint differs from the card surface by at least 1.05:1 (WCAG relative luminance); in dark only, the accent saturation is
-// at most 40 percent and the tint saturation at most 22 percent (phase 4f.0.2). Node checks the rules on fixed values,
+// at most 40 percent and the tint saturation at most 22 percent (phase 4f.0.2); in dark, each tint is the formula
+// mixHex(surface, accent, palette.darkTintMix), 1.10 to 1.25 on the surface, channel spread at most 14 (phase 4g.2).
+// Node checks the rules on fixed values,
 // including planted bad ones. The browser reads the computed custom properties of tokens.css in both themes: Node has no
 // stylesheet reader here, and app code does not read files.
 import { test, skip, assert } from '../core/harness.js';
 import { settingsConfig } from '../config/settings.js';
+import { palette } from '../config/palette.js';
+import { mixHex, channelSpread } from '../core/color.js';
 
 // The phase's limits. They are this test's rules, not product tunables.
 const HUE_MIN_DEG = 35;
@@ -32,11 +36,11 @@ const FIXED = {
   dark: {
     text: '#e7e9ee', surface: '#1e2129',
     groups: {
-      what: { accent: '#bba9da', tint: '#352c44' },
-      how: { accent: '#daa9ca', tint: '#442c3d' },
-      check: { accent: '#cb86b6', tint: '#352230' },
-      numbers: { accent: '#b6c3bf', tint: '#35413d' },
-      care: { accent: '#b8b8b8', tint: '#404040' },
+      what: { accent: '#bba9da', tint: '#2e2f3b' },
+      how: { accent: '#daa9ca', tint: '#312f39' },
+      check: { accent: '#cb86b6', tint: '#2f2b37' },
+      numbers: { accent: '#b6c3bf', tint: '#2d3138' },
+      care: { accent: '#b8b8b8', tint: '#2d3037' },
     },
   },
   light: {
@@ -110,6 +114,13 @@ function evaluate(theme) {
       if (s > DARK_ACCENT_SAT_MAX) failures.push(`dark ${kind}: accent saturation ${Math.round(s * 100)} percent is above ${DARK_ACCENT_SAT_MAX * 100}`);
       const tintSat = hueSat(tint).s;
       if (tintSat > DARK_TINT_SAT_MAX) failures.push(`dark ${kind}: tint saturation ${Math.round(tintSat * 100)} percent is above ${DARK_TINT_SAT_MAX * 100}`);
+      const formula = mixHex(theme.surface, accent, palette.darkTintMix);
+      if (tint !== formula) failures.push(`dark ${kind}: tint ${tint} is not mixHex(surface, accent, ${palette.darkTintMix}) = ${formula}`);
+      if (row.tintOnSurface < palette.tintOnSurface.min || row.tintOnSurface > palette.tintOnSurface.max) {
+        failures.push(`dark ${kind}: tint on surface ${row.tintOnSurface.toFixed(3)} is outside ${palette.tintOnSurface.min} to ${palette.tintOnSurface.max}`);
+      }
+      const spread = channelSpread(tint);
+      if (spread > palette.tintSpreadMax) failures.push(`dark ${kind}: tint channel spread ${spread} is above ${palette.tintSpreadMax}`);
     }
     if (s >= CHROMA_MIN) {
       hues[kind] = h;
@@ -158,6 +169,22 @@ test('palette rules: a planted tint that is too close to the text fails the text
   assert.ok(failures.some((f) => /how: text on tint/.test(f)), `expected a text failure, got ${failures.join('; ')}`);
 });
 
+test('palette rules: the old dark tints #442c3d and #35413d are rejected', () => {
+  const planted = fixedTheme('dark', {
+    how: { accent: FIXED.dark.groups.how.accent, tint: '#442c3d' },
+    numbers: { accent: FIXED.dark.groups.numbers.accent, tint: '#35413d' },
+  });
+  const { failures } = evaluate(planted);
+  assert.ok(failures.some((f) => /dark how: tint #442c3d/.test(f)), `expected the how tint to fail, got ${failures.join('; ')}`);
+  assert.ok(failures.some((f) => /dark numbers: tint #35413d/.test(f)), `expected the numbers tint to fail, got ${failures.join('; ')}`);
+});
+
+test('palette rules: an off-formula dark tint is rejected by the formula rule', () => {
+  const planted = fixedTheme('dark', { what: { accent: FIXED.dark.groups.what.accent, tint: '#2e2f3c' } });
+  const { failures } = evaluate(planted);
+  assert.ok(failures.some((f) => /dark what: tint #2e2f3c is not mixHex/.test(f)), `expected a formula failure, got ${failures.join('; ')}`);
+});
+
 test('palette rules: the candidate values pass every rule in both themes', () => {
   for (const name of ['dark', 'light']) {
     const { failures } = evaluate(fixedTheme(name));
@@ -169,20 +196,31 @@ test('palette rules: the candidate values pass every rule in both themes', () =>
 if (typeof document === 'undefined') {
   skip('computed group palette of tokens.css: every rule passes in dark and light', 'browser only');
 } else {
-  test('computed group palette of tokens.css: every rule passes in dark and light', () => {
+  test('computed group palette of tokens.css: every rule passes in default, dark and light, and matches FIXED', () => {
     const root = document.documentElement;
     const original = root.getAttribute('data-theme');
     const failures = [];
+    // No attribute is the default; tokens.css gives it the dark values on :root.
+    const cases = [
+      { label: 'default', name: 'dark', attr: null },
+      { label: 'dark', name: 'dark', attr: 'dark' },
+      { label: 'light', name: 'light', attr: 'light' },
+    ];
     try {
-      for (const name of ['dark', 'light']) {
-        if (name === 'dark') root.setAttribute('data-theme', 'dark');
-        else root.setAttribute('data-theme', 'light');
+      for (const c of cases) {
+        if (c.attr === null) root.removeAttribute('data-theme');
+        else root.setAttribute('data-theme', c.attr);
         const cs = getComputedStyle(root);
         const read = (prop) => cs.getPropertyValue(prop).trim();
         const groups = Object.fromEntries(GROUPS.map((kind) => [kind, { accent: read(`--grp-${kind}-accent`), tint: read(`--grp-${kind}-tint`) }]));
         const refs = [...MOOD_HEXES, read('--div-1'), read('--div-7'), read('--diverge-neg'), read('--diverge-pos')];
-        const theme = { name, text: read('--text'), surface: read('--surface'), groups, refs };
-        failures.push(...evaluate(theme).failures);
+        const theme = { name: c.name, text: read('--text'), surface: read('--surface'), groups, refs };
+        failures.push(...evaluate(theme).failures.map((f) => `${c.label}: ${f}`));
+        for (const kind of GROUPS) {
+          const want = FIXED[c.name].groups[kind];
+          if (groups[kind].tint !== want.tint) failures.push(`${c.label} ${kind}: computed tint ${groups[kind].tint} is not ${want.tint}`);
+          if (groups[kind].accent !== want.accent) failures.push(`${c.label} ${kind}: computed accent ${groups[kind].accent} is not ${want.accent}`);
+        }
       }
     } finally {
       if (original === null) root.removeAttribute('data-theme');

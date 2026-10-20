@@ -6,6 +6,8 @@
 export const exploreHelp = {
   ui: {
     toggle: 'How to read this',
+    // Collapses the glossary list only; separate from the "How to read this" block (decision D9).
+    legendToggle: 'Legend',
     // "{name}": the glossary card's title.
     glossaryLink: 'Terms such as observed day are explained in "{name}" at the top of Explore.',
   },
@@ -70,7 +72,7 @@ export const exploreHelp = {
       care: 'Reloading the page clears the export loaded in this tab, so load it again afterwards. Your settings are kept.',
     },
     'data-load': {
-      what: 'Loads your tracker export (a .csv or .txt file) and, optionally, a settings file (.json). The files are read in this tab and never uploaded. A made-up sample is there to try the app.',
+      what: 'Loads your tracker export (a .csv or .txt file) and, optionally, a settings file (.json). A made-up sample is there to try the app.',
       how: 'Pick one or both files in one step. Export settings saves the current settings to a file you can keep. Clear loaded data removes the export from this tab; the settings stay.',
       numbers: 'Entries: records in the export. Days, first to last: from the first to the last date. Labels and moods: distinct names. Rejected rows: records that could not be read and were left out.',
       care: 'The sample is made-up data, not your data. Loaded data stays in this tab; reloading the page clears it, so load the export again.',

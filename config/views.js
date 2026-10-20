@@ -154,7 +154,7 @@ export const viewSettings = {
       labels: ['Poor sleep S-', 'Calm M+', 'Anxious M-'],
       windows: [30, 90],     // trailing window in days
       defaultWindow: 30,
-      seriesBins: [1, 6, 3], // colour bins for the three lines
+      perLine: 6,            // markers per T4 line, evenly spaced from its first to its last point
       swatch: 10,
       legendRowHeight: 16,
       legendGap: 8,

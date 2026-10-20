@@ -38,17 +38,26 @@
      so the plum and violet groups do not pull attention from the text. Hues and lightness are kept from 4e; only the
      saturation changes. The accent stays a border and caption colour, never a fill. Light values are not changed. */
   --grp-what-accent: #bba9da;
-  --grp-what-tint: #352c44;
+  --grp-what-tint: #2e2f3b;
   --grp-how-accent: #daa9ca;
-  --grp-how-tint: #442c3d;
+  --grp-how-tint: #312f39;
   --grp-check-accent: #cb86b6;
-  --grp-check-tint: #352230;
+  --grp-check-tint: #2f2b37;
   --grp-numbers-accent: #b6c3bf;
-  --grp-numbers-tint: #35413d;
+  --grp-numbers-tint: #2d3138;
   --grp-care-accent: #b8b8b8;
-  --grp-care-tint: #404040;
+  --grp-care-tint: #2d3037;
   --grp-caption-size: 0.875rem;
-  --build: "0.9.2";
+  /* T4 series colours (phase 4g.3), the same values as seriesPalette.dark in app\config\palette.js. */
+  --series-1: #209bf6;
+  --series-2: #e5c45f;
+  --series-3: #eb6b98;
+  --series-4: #2ddfb3;
+  --series-5: #5bbed3;
+  --series-6: #df7b4e;
+  --series-7: #6da449;
+  --series-8: #d6bcf1;
+  --build: "0.9.3";
 }
 
 :root[data-theme="light"] {
@@ -78,6 +87,15 @@
   --grp-numbers-tint: #ebefee;
   --grp-care-accent: #616161;
   --grp-care-tint: #ebebeb;
+  /* T4 series colours, light (phase 4g.3), the same values as seriesPalette.light. */
+  --series-1: #9d3723;
+  --series-2: #176dc7;
+  --series-3: #437a20;
+  --series-4: #84693b;
+  --series-5: #7f3f92;
+  --series-6: #116550;
+  --series-7: #86455a;
+  --series-8: #057698;
 }
 
 :root[data-theme="dark"] {
@@ -93,13 +111,21 @@
   --diverge-pos: #e8862e;
   color-scheme: dark;
   --grp-what-accent: #bba9da;
-  --grp-what-tint: #352c44;
+  --grp-what-tint: #2e2f3b;
   --grp-how-accent: #daa9ca;
-  --grp-how-tint: #442c3d;
+  --grp-how-tint: #312f39;
   --grp-check-accent: #cb86b6;
-  --grp-check-tint: #352230;
+  --grp-check-tint: #2f2b37;
   --grp-numbers-accent: #b6c3bf;
-  --grp-numbers-tint: #35413d;
+  --grp-numbers-tint: #2d3138;
   --grp-care-accent: #b8b8b8;
-  --grp-care-tint: #404040;
+  --grp-care-tint: #2d3037;
+  --series-1: #209bf6;
+  --series-2: #e5c45f;
+  --series-3: #eb6b98;
+  --series-4: #2ddfb3;
+  --series-5: #5bbed3;
+  --series-6: #df7b4e;
+  --series-7: #6da449;
+  --series-8: #d6bcf1;
 }

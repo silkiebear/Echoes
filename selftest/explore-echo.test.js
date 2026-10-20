@@ -155,7 +155,9 @@ function textBoxesOf(svg) {
   const [, width, height] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
   const boxes = [];
   const re = /<text x="([^"]*)" y="([^"]*)" dy="[^"]*" class="[^"]*" text-anchor="([^"]*)" font-size="([^"]*)">([\s\S]*?)<\/text>/g;
-  for (const m of svg.matchAll(re)) boxes.push(textBox(Number(m[1]), Number(m[2]), m[5], Number(m[4]), m[3]));
+  // The markup escapes quotes and ampersands; decode them so each character is measured once, as drawn.
+  const decode = (s) => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  for (const m of svg.matchAll(re)) boxes.push(textBox(Number(m[1]), Number(m[2]), decode(m[5]), Number(m[4]), m[3]));
   return { width: Number(width), height: Number(height), boxes };
 }
 

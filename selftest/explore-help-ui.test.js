@@ -104,4 +104,49 @@ if (typeof document === 'undefined') {
     }
     assert.equal(failures.length, 0, failures.join('; '));
   });
+
+  test('explore help: the Legend toggle hides and shows the glossary list only; both toggles are independent in all four combinations; both at least 44 px tall', () => {
+    const host = document.createElement('section');
+    host.style.width = `${WIDTH}px`;
+    document.body.append(host);
+    const failures = [];
+    try {
+      helpMod.default.mount(host, {});
+      const card = host.querySelector('section.card');
+      const help = card.querySelector('.help-toggle');
+      const legend = card.querySelector('.legend-toggle');
+      const list = card.querySelector('dl.glossary');
+      if (!help || !legend || !list) {
+        failures.push(`glossary card has help toggle ${Boolean(help)}, legend toggle ${Boolean(legend)}, list ${Boolean(list)}`);
+      } else {
+        if (legend.textContent !== exploreHelp.ui.legendToggle) failures.push(`legend text "${legend.textContent}"`);
+        const listShown = () => !list.hidden && getComputedStyle(list).display !== 'none';
+        const want = (step, helpOpen, legendOpen) => {
+          const got = `help ${help.getAttribute('aria-expanded')}, legend ${legend.getAttribute('aria-expanded')}, list ${listShown()}`;
+          const expected = `help ${helpOpen}, legend ${legendOpen}, list ${legendOpen}`;
+          if (got !== expected) failures.push(`${step}: got ${got}; want ${expected}`);
+        };
+        want('start', false, true);
+        legend.click();
+        want('legend closed', false, false);
+        help.click();
+        want('help opened, legend closed', true, false);
+        legend.click();
+        want('legend opened, help open', true, true);
+        help.click();
+        want('help closed, legend open', false, true);
+        legend.click();
+        want('legend closed, help closed', false, false);
+        legend.click();
+        want('legend reopened', false, true);
+        for (const [name, button] of [['help', help], ['legend', legend]]) {
+          const height = button.getBoundingClientRect().height;
+          if (!(height >= MIN_TARGET)) failures.push(`${name} toggle is ${height} px tall, want at least ${MIN_TARGET}`);
+        }
+      }
+    } finally {
+      host.remove();
+    }
+    assert.equal(failures.length, 0, failures.join('; '));
+  });
 }

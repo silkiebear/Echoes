@@ -24,7 +24,22 @@ export default {
       dd.textContent = text;
       list.append(dt, dd);
     }
-    card.append(cardHelp('glossary').help, list);
+    // The Legend toggle collapses only the list; it starts open and its state is kept for this session only.
+    const legend = document.createElement('button');
+    legend.type = 'button';
+    legend.className = 'legend-toggle';
+    legend.textContent = exploreHelp.ui.legendToggle;
+    let legendOpen = true;
+    const syncLegend = () => {
+      legend.setAttribute('aria-expanded', String(legendOpen));
+      list.hidden = !legendOpen;
+    };
+    legend.addEventListener('click', () => {
+      legendOpen = !legendOpen;
+      syncLegend();
+    });
+    syncLegend();
+    card.append(cardHelp('glossary').help, legend, list);
     container.append(card);
   },
 };

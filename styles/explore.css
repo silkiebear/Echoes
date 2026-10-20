@@ -133,10 +133,12 @@
   min-width: 0;
 }
 
-.help-toggle {
+.help-toggle,
+.legend-toggle {
   display: block;
   box-sizing: border-box;
   width: 100%;
+  height: var(--touch);
   min-height: var(--touch);
   padding: 0 var(--space-1);
   color: var(--text);
