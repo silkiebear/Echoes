@@ -27,7 +27,9 @@ export const explore = {
   dayMood: { rounding: 'nearest' },
   // A stored mood colour that is not #rrggbb is drawn in this grey instead (4d.0.2). Same value as views.js
   // fallbackColor (the M2 setup preview), kept here so the Explore views do not depend on the gallery config.
-  mood: { fallbackColor: '#9aa1b0' },
+  // digits: decimals of the mood means and the range in the M1 card (a choice: a score step is 1, so two decimals show a
+  // difference of a tenth).
+  mood: { fallbackColor: '#9aa1b0', digits: 2 },
   // Message drawn when a card has nothing to show yet (4e.0.2). The text wraps to the card width; the height follows
   // the line count. Choice: fontPx matches views.js text.fontPx; lineHeight leaves room for descenders; padding is the
   // inset on every side, in CSS px.
@@ -89,5 +91,59 @@ export const explore = {
     outcomeSelect: 'Outcome',
     // Mood day rule: a day with no mood score is drawn as its own class, not as the worst mood.
     noMoodNote: 'Grey days have no mood entry.',
+    // Days together (C1). The card heading, its note, and the live sentence about the pair with the most days together.
+    cooHeading: 'C1 Days together',
+    noteC1: 'Observed days on which each pair of the selected labels was present on the same day. The diagonal is each label on its own. {descriptive}',
+    cooLabels: 'Labels in matrix order: {list}.',
+    cooNeedTwo: 'Choose at least 2 labels to see the days they share.',
+    cooLive: 'The pair with the most days together is {first} and {second}, on {days} days.',
+    cooNone: 'No two selected labels were on the same day.',
+    // Combinations (C2): the card heading, its note, the summary line, the table headers and the cell words. The badge
+    // marks the row where every selected label is present. "{names}": the labels present in the most frequent combination.
+    cbHeading: 'C2 Combinations',
+    noteC2: 'For the selected labels, which combinations of present and absent occurred on observed days, and how many days each. {descriptive}',
+    cbSummary: 'All together: {all} days. None of them: {none} days. Some but not all: {some} days. ({n} observed days)',
+    cbDays: 'Days',
+    cbShare: 'Share of days',
+    cbPresent: 'present',
+    cbAbsent: 'absent',
+    cbPresentMark: '\u25CF',
+    cbAbsentMark: '\u25CB',
+    cbBadge: 'all together',
+    cbLive: 'The most frequent combination has {names} present, on {days} days.',
+    cbNoNames: 'no label',
+    cbNone: 'No observed day.',
+    cbMany: 'Choose up to {max} labels for this table.',
+    // Mood and this label (M1): the card heading, its note, the sentence and the table. The sentence says "score" without
+    // a range of values: the mood scores run from 1 to the number of your moods, so the scale is not fixed here.
+    miHeading: 'M1 Mood and this label',
+    // The M1 note has no shared sentence: the card compares days of one period (phase 4h.3b).
+    noteM1: 'Mean mood score on the days with one selected label and on the other days between its first and last use. It describes your data and does not show a cause.',
+    miOk: 'On days with {label} your mood averaged {mean1} (mood score, higher is better); on the other days of the same period, {mean0}. The difference is {diff}. The range that fits most resamples of your days is {lo} to {hi}.',
+    miTooFew: 'Not enough days with and without this label (at least {min} each) to say anything.',
+    miTooSkipped: 'The range could not be worked out for this label.',
+    // The first column of the table holds the groups and the difference and range rows, so it is not called "Days".
+    miColGroup: 'Comparison',
+    miColValue: 'Mood score',
+    miRowWith: 'With {label} ({n} days)',
+    miRowWithout: 'Without {label}, same period ({n} days)',
+    // The active period line under the Label select: the days used, the first and last use, the days left out.
+    miPeriod: 'Days used: {used}, from your first use of {label} ({first}) to your last ({last}). Observed days left out (outside this period): {excluded}.',
+    miPeriodAll: 'Days used: {used}, from your first use of {label} ({first}) to your last ({last}). No observed days are left out.',
+    miRowDiff: 'Difference',
+    miRowRange: 'Range ({level})',
+    miRangeText: '{lo} to {hi}',
+    // Technical line behind "Show technical numbers" (the toggle text is config\stats.js technical.toggle).
+    miNumbers: 'Seed {seed}; {resamples} resamples; blocks of {blockLength} days.',
   },
+  // C1 matrix geometry (phase 4h): a cell is cellPx high and at least cellPx wide; a label is drawn in labelPx, wrapped to
+  // at most headerLines lines (the column headers) or cut to rowLines (the row labels). Sizes in CSS px, text in fontPx.
+  // colMaxPx (phase 4h.3c, D19): the widest a column may be. All columns share one width: the widest header word plus
+  // 2 x padPx, between cellPx and colMaxPx. A word wider than colMaxPx - 2 x padPx still breaks; the matrix scrolls in its card.
+  // headerAboveEm, headerBelowEm: the header text boxes, as shares of fontPx, around the centre y of a header line (the
+  // same centring as the rows and cells). Measured in Chromium (4h.3): the box reaches 0.758em above the centre and
+  // 0.625em below it, the 0.35em baseline shift of core\svg.js included. The values are rounded up, so the first box
+  // starts at or just below the top edge and the last box ends above the first row. The 4h.3 fix (descentShare) moved
+  // the header baseline by a formula that did not match this box.
+  matrix: { cellPx: 44, labelPx: 96, colMaxPx: 96, headerLines: 3, rowLines: 2, fontPx: 12, lineHeight: 14, padPx: 4, radiusPx: 4, headerAboveEm: 0.77, headerBelowEm: 0.64 },
 };

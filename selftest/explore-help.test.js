@@ -26,6 +26,8 @@ import * as diag from '../core/diag.js';
 import * as selectMod from '../modules/explore-select.js';
 import * as timeMod from '../modules/explore-time.js';
 import * as periodicMod from '../modules/explore-periodic.js';
+import * as combosMod from '../modules/explore-combos.js';
+import * as moodMod from '../modules/explore-mood.js';
 import * as echoMod from '../modules/explore-echo.js';
 import * as helpMod from '../modules/explore-help.js';
 
@@ -73,7 +75,7 @@ test('help: every card has four parts, none empty, none longer than explore.help
 });
 
 test('help: every card id the Explore modules export has help, and every help entry has a module', async () => {
-  const exported = [selectMod, timeMod, periodicMod, echoMod, helpMod].flatMap((m) => m.cardIds);
+  const exported = [selectMod, timeMod, periodicMod, echoMod, helpMod, combosMod, moodMod].flatMap((m) => m.cardIds);
   assert.deepEqual(exported.filter((id) => exploreHelp.cards[id] === undefined), [], 'card ids without help');
   // E3 is the Gallery's own ranking card: it has no Explore twin, so its entry is kept for the Gallery (phase 4f.4).
   const galleryOnly = ['E3'];

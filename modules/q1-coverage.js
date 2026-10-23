@@ -6,7 +6,7 @@ import { timeDiversity as diversityFlags } from '../config/flags.js';
 import { viewSettings } from '../config/views.js';
 import { formatPercent } from '../core/format.js';
 import * as store from '../core/store.js';
-import { moduleHelp, groupOf } from '../core/module-help.js';
+import { moduleHelp } from '../core/module-help.js';
 
 const CFG = { completeness: settingsConfig.completeness, diversity: diversityFlags };
 const PERIODIC = viewSettings.time.periodic;
@@ -65,9 +65,8 @@ export default {
   order: 14,
   mount(container) {
     container.append(moduleHelp('q1-coverage'));
-    const note = groupOf('what', el('p', 'data-note', 'How much of the export is usable: days, entries and marks per day.'));
     const body = el('div', 'table-wrap');
-    container.append(note, body);
+    container.append(body);
 
     function render(state) {
       body.replaceChildren();

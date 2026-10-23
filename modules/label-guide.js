@@ -57,13 +57,13 @@ function helpBlock() {
   return block;
 }
 
-// The template, the breakdown, the seven marks and five worked examples read from the parser.
+// The template, the breakdown, the seven marks, five worked examples and the glossary words, in one visible section.
 function formatGroup(categories) {
-  const group = el('div', 'grp grp-how');
+  const group = el('div');
   group.append(
-    el('p', 'grp-caption', labelGuide.captions.how),
-    el('p', 'grp-text', labelGuide.format.template),
-    el('p', 'grp-text', labelGuide.format.breakdown),
+    el('h3', null, labelGuide.sections.format),
+    el('p', 'data-note', labelGuide.format.template),
+    el('p', 'data-note', labelGuide.format.breakdown),
   );
   const marks = el('dl', 'glossary');
   for (const { mark, meaning } of labelGuide.marks) marks.append(el('dt', null, mark), el('dd', null, meaning));
@@ -77,13 +77,15 @@ function formatGroup(categories) {
     });
     examples.append(el('li', null, `${text}: ${reading}`));
   }
-  group.append(el('p', 'grp-caption', labelGuide.examples.caption), marks, examples);
+  const terms = el('dl', 'glossary');
+  for (const { term, text } of labelGuide.glossary.terms) terms.append(el('dt', null, term), el('dd', null, text));
+  group.append(marks, examples, terms);
   return group;
 }
 
 // The checker: a typed label, read the way the Label coding card reads it, in plain words.
 function checkGroup() {
-  const group = el('div', 'grp grp-check');
+  const group = el('div');
   const input = el('input', 'explore-input');
   input.type = 'text';
   input.autocomplete = 'off';
@@ -94,7 +96,7 @@ function checkGroup() {
   const note = el('p', 'data-note', labelGuide.check.empty);
   const result = el('dl', 'glossary');
   result.hidden = true;
-  group.append(el('p', 'grp-caption', labelGuide.check.caption), field, note, result);
+  group.append(el('h3', null, labelGuide.check.caption), field, note, result);
 
   function show(list) {
     result.replaceChildren();
@@ -133,21 +135,16 @@ export default {
   order: 15.5,
   mount(container) {
     const card = el('section', 'card');
-    const categoryGroup = el('div', 'grp grp-what');
+    const categoryGroup = el('div');
     const check = checkGroup();
     card.append(helpBlock(), formatGroup(currentCategories()), categoryGroup, check.node);
-
-    const glossary = el('section', 'card');
-    const terms = el('dl', 'glossary');
-    for (const { term, text } of labelGuide.glossary.terms) terms.append(el('dt', null, term), el('dd', null, text));
-    glossary.append(el('p', 'grp-caption', labelGuide.glossary.title), terms);
-    container.append(card, glossary);
+    container.append(card);
 
     function render(state) {
       const list = guideCategories(state.settings?.categories ?? []);
-      categoryGroup.replaceChildren(el('p', 'grp-caption', labelGuide.captions.what), el('p', 'grp-text', labelGuide.categories.intro));
+      categoryGroup.replaceChildren(el('h3', null, labelGuide.sections.categories));
       if (list.length === 0) {
-        categoryGroup.append(el('p', 'grp-text', labelGuide.ui.noCategories));
+        categoryGroup.append(el('p', 'data-note', labelGuide.ui.noCategories));
       } else {
         const items = el('ul', 'label-list');
         items.append(...list.map(({ code, name }) => el('li', null, `${code}  ${name}`)));

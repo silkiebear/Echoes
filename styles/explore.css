@@ -201,3 +201,21 @@
 .glossary dd {
   margin-left: 0;
 }
+
+/* C1 days-together matrix (phase 4h): each square takes one shade by level; its number takes the text colour, so the number is the cue that does not depend on colour. */
+.co-0 { fill: var(--co-1); }
+.co-1 { fill: var(--co-2); }
+.co-2 { fill: var(--co-3); }
+.co-3 { fill: var(--co-4); }
+.co-4 { fill: var(--co-5); }
+.co-num { fill: var(--text); }
+
+/* C2 combination table (phase 4h): a present cell takes the yes tint, an absent cell the no tint; the word is the cue. */
+.cb-table { border-collapse: collapse; width: 100%; }
+.cb-table th, .cb-table td { border: 1px solid var(--border); padding: var(--space-1); text-align: left; vertical-align: top; }
+.cb-table th { overflow-wrap: anywhere; position: sticky; top: 0; background: var(--surface); color: var(--text); }
+.cb-yes { background: var(--cb-yes); color: var(--text); }
+.cb-no { background: var(--cb-no); color: var(--text); }
+.cb-badge { display: inline-block; border: 1px solid var(--text-muted); border-radius: var(--radius-sm); padding: 0 var(--space-1); color: var(--text); }
+.mi-table { border-collapse: collapse; width: 100%; color: var(--text); }
+.mi-table th, .mi-table td { border: 1px solid var(--border); padding: var(--space-1); text-align: left; vertical-align: top; overflow-wrap: anywhere; }

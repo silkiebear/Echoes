@@ -27,7 +27,7 @@ if (typeof document === 'undefined') {
       guideMod.default.mount(host, {});
       const card = host.querySelector('section.card');
       const input = host.querySelector('input.explore-input');
-      const checkGroup = input.closest('.grp-check');
+      const checkGroup = input.closest('label').parentElement;
       const result = checkGroup.querySelector('dl');
       const height = input.getBoundingClientRect().height;
       if (!(height >= MIN_TARGET)) failures.push(`checker field is ${height} px tall`);

@@ -19,4 +19,6 @@ export const modules = [
   './explore-echo.js',
   './explore-help.js',
   './label-guide.js',
+  './explore-combos.js',
+  './explore-mood.js',
 ];

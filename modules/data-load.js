@@ -9,7 +9,7 @@ import { parseExport } from '../core/export-parse.js';
 import { validateSettings, saveCached, exportSettingsText } from '../core/settings.js';
 import { downloadText } from '../core/download.js';
 import { missingMoods } from '../core/mood.js';
-import { moduleHelp, groupOf } from '../core/module-help.js';
+import { moduleHelp } from '../core/module-help.js';
 import { moodHint } from '../config/explore.js';
 import * as store from '../core/store.js';
 
@@ -64,7 +64,6 @@ export default {
     container.append(moduleHelp('data-load'));
     const diag = ctx.diag;
 
-    const note = groupOf('what', el('p', 'data-note', 'Files are read in this tab and never uploaded.'));
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -84,7 +83,7 @@ export default {
     const moodNote = el('p', 'card-sub');
     moodNote.hidden = true;
     const counts = el('dl', 'counts');
-    container.append(note, pick, row, status, moodNote, counts);
+    container.append(pick, row, status, moodNote, counts);
 
     function renderMoodHint(state) {
       const pending = Boolean(state.data && state.settings && missingMoods(state.settings, state.data.moodNames).length > 0);

@@ -13,6 +13,8 @@ import { exploreHelp } from '../config/explore-help.js';
 import * as selectMod from '../modules/explore-select.js';
 import * as timeMod from '../modules/explore-time.js';
 import * as periodicMod from '../modules/explore-periodic.js';
+import * as combosMod from '../modules/explore-combos.js';
+import * as moodMod from '../modules/explore-mood.js';
 import * as echoMod from '../modules/explore-echo.js';
 import * as helpMod from '../modules/explore-help.js';
 
@@ -22,7 +24,7 @@ const EVENT_TEXT = 'Late coffee F-';
 const OUTCOME_TEXT = 'Poor sleep S-';
 const PARTS = ['what', 'how', 'numbers', 'care'];
 // Cards in the Explore tab: the glossary, four T cards, four P cards and three E cards.
-const EXPECTED_CARDS = 12;
+const EXPECTED_CARDS = 15;
 
 if (typeof document === 'undefined') {
   skip('explore help at 320 px: every card has a block that opens, targets 44 px, no sideways scroll; store restored', 'browser only');
@@ -47,7 +49,7 @@ if (typeof document === 'undefined') {
       const event = parsed.labels.find((l) => l.text === EVENT_TEXT).id;
       const outcome = parsed.labels.find((l) => l.text === OUTCOME_TEXT).id;
       store.set({ data: parsed, parseStats: null, selection: [event, outcome], pair: { window: '1d' }, scanResult: null, settings });
-      for (const mod of [helpMod, selectMod, timeMod, periodicMod, echoMod]) {
+      for (const mod of [helpMod, selectMod, timeMod, periodicMod, echoMod, combosMod, moodMod]) {
         const box = document.createElement('div');
         host.append(box);
         mod.default.mount(box, {});

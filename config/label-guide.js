@@ -33,6 +33,11 @@ export const labelGuide = {
     { mark: '-', meaning: 'bad' },
     { mark: '--', meaning: 'very bad' },
   ],
+  // Headings of the visible sections; the group captions stay inside the "How to read this" block only.
+  sections: {
+    format: 'Format and value marks',
+    categories: 'Categories',
+  },
   examples: {
     caption: 'Examples',
     list: ['Late coffee Fb--', 'Walk Aa++', 'Nap S=', 'Quiet day M+', 'Gym A1+'],

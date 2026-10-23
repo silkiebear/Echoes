@@ -57,7 +57,17 @@
   --series-6: #df7b4e;
   --series-7: #6da449;
   --series-8: #d6bcf1;
-  --build: "0.9.3";
+  /* Days-together matrix levels (phase 4h, C1): one amber hue family, not a mood colour and not the blue-orange scale.
+     Dark levels stay at or below luminance 0.196 so the --text number keeps at least 4.5:1 on every level. */
+  --co-1: #2b2410;
+  --co-2: #433a18;
+  --co-3: #5b4e1e;
+  --co-4: #6d5d1c;
+  --co-5: #7d6219;
+  /* Combination table (phase 4h, C2): tints for present and absent cells. Not mood colours; the word in each cell is the cue. */
+  --cb-yes: #23402f;
+  --cb-no: #2a2d36;
+  --build: "0.9.4";
 }
 
 :root[data-theme="light"] {
@@ -96,6 +106,15 @@
   --series-6: #116550;
   --series-7: #86455a;
   --series-8: #057698;
+  /* Days-together matrix levels, light (phase 4h, C1). Light levels stay at or above luminance 0.236 so the dark --text
+     number keeps at least 4.5:1 on every level. */
+  --co-1: #fdf8e6;
+  --co-2: #f7ebb8;
+  --co-3: #efdb8a;
+  --co-4: #e6cb63;
+  --co-5: #dcbb45;
+  --cb-yes: #d7efe0;
+  --cb-no: #eceef3;
 }
 
 :root[data-theme="dark"] {
@@ -128,4 +147,11 @@
   --series-6: #df7b4e;
   --series-7: #6da449;
   --series-8: #d6bcf1;
+  --co-1: #2b2410;
+  --co-2: #433a18;
+  --co-3: #5b4e1e;
+  --co-4: #6d5d1c;
+  --co-5: #7d6219;
+  --cb-yes: #23402f;
+  --cb-no: #2a2d36;
 }
